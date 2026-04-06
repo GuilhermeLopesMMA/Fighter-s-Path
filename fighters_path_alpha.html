@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fighter's Path — Alpha v0.1</title>
+<link rel="shortcut icon" href="media/logo.png" type="image/x-icon">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; image-rendering: pixelated; }
+
+:root {
+  --gb-dark:   #0f380f;
+  --gb-dark2:  #306230;
+  --gb-light:  #8bac0f;
+  --gb-lightest:#9bbc0f;
+  --gb-cream:  #e0f0b0;
+  --gb-white:  #f5ffe8;
+  --gb-red:    #b03000;
+  --gb-gold:   #c88000;
+  --gb-blue:   #1c4888;
+  --gb-shadow: #0a280a;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
+}
+
+#gameWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#gameTitle {
+  color: var(--gb-light);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-shadow: 2px 2px 0 var(--gb-shadow);
+}
+
+#screen {
+  width: 480px;
+  height: 432px;
+  background: var(--gb-dark);
+  border: 6px solid #333;
+  outline: 3px solid #555;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ===== BATTLE SCENE ===== */
+#battleScene {
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#battleField {
+  width: 100%;
+  height: 192px;
+  background: var(--gb-dark);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Ground lines */
+#battleField::after {
+  content: '';
+  position: absolute;
+  bottom: 32px; left: 0; right: 0;
+  height: 2px;
+  background: var(--gb-dark2);
+  box-shadow: 0 4px 0 var(--gb-shadow), 0 -4px 0 var(--gb-shadow);
+}
+
+/* Position indicator banner */
+#positionBanner {
+  position: absolute;
+  top: 4px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--gb-dark2);
+  border: 2px solid var(--gb-light);
+  padding: 3px 8px;
+  font-size: 6px;
+  color: var(--gb-cream);
+  white-space: nowrap;
+  z-index: 10;
+  transition: opacity 0.3s;
+}
+
+/* ===== SPRITES via canvas ===== */
+#playerSprite, #enemySprite {
+  position: absolute;
+  bottom: 34px;
+  image-rendering: pixelated;
+}
+#playerSprite { left: 40px; }
+#enemySprite  { right: 40px; transform: scaleX(-1); }
+
+/* ===== HP / STAMINA BARS ===== */
+.statBox {
+  position: absolute;
+  background: var(--gb-dark);
+  border: 2px solid var(--gb-light);
+  padding: 4px 6px;
+  font-size: 5px;
+  color: var(--gb-cream);
+  line-height: 2;
+}
+
+#playerStats { bottom: 8px; left: 6px; min-width: 140px; }
+#enemyStats  { top: 8px; right: 6px; min-width: 140px; }
+
+.statName { font-size: 6px; color: var(--gb-lightest); margin-bottom: 3px; }
+
+.barRow { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
+.barLabel { font-size: 5px; color: var(--gb-light); width: 14px; }
+.barTrack {
+  width: 80px; height: 6px;
+  background: var(--gb-shadow);
+  border: 1px solid var(--gb-dark2);
+  position: relative;
+  overflow: hidden;
+}
+.barFill {
+  height: 100%;
+  transition: width 0.4s ease;
+  position: relative;
+}
+.barFill.hp   { background: var(--gb-light); }
+.barFill.hp.low { background: var(--gb-red); }
+.barFill.st   { background: var(--gb-gold); }
+.barNum { font-size: 5px; color: var(--gb-cream); min-width: 28px; }
+
+/* ===== LOWER UI ===== */
+#lowerUI {
+  flex: 1;
+  background: var(--gb-dark);
+  border-top: 4px solid var(--gb-dark2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Message box */
+#msgBox {
+  padding: 8px 10px;
+  min-height: 60px;
+  border-bottom: 2px solid var(--gb-dark2);
+  font-size: 7px;
+  color: var(--gb-cream);
+  line-height: 1.8;
+  position: relative;
+}
+
+#msgBox .cursor {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--gb-light);
+  animation: blink 0.8s step-end infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ===== MENUS ===== */
+#menuArea {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+}
+
+/* Main menu (FIGHT / TÉCNICAS / POSIÇÃO / FUGIR) */
+#mainMenu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+}
+
+.mainBtn {
+  background: var(--gb-dark);
+  border: 1px solid var(--gb-dark2);
+  color: var(--gb-cream);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 10px 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.1s;
+  position: relative;
+}
+
+.mainBtn:hover, .mainBtn.selected {
+  background: var(--gb-dark2);
+  color: var(--gb-lightest);
+}
+
+.mainBtn::before {
+  content: '▶';
+  position: absolute;
+  left: 4px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 6px;
+  color: var(--gb-light);
+  opacity: 0;
+}
+
+.mainBtn:hover::before, .mainBtn.selected::before { opacity: 1; }
+
+/* Technique menu */
+#techMenu {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  overflow-y: auto;
+}
+
+.techBtn {
+  background: var(--gb-dark);
+  border-bottom: 1px solid var(--gb-dark2);
+  color: var(--gb-cream);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  padding: 7px 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.1s;
+}
+
+.techBtn:hover { background: var(--gb-dark2); color: var(--gb-lightest); }
+.techBtn.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+.techName { flex: 1; }
+.techCost { color: var(--gb-gold); font-size: 5px; }
+.techDmg  { color: var(--gb-red);  font-size: 5px; }
+.techPos  {
+  font-size: 5px;
+  padding: 1px 3px;
+  border: 1px solid var(--gb-dark2);
+  color: var(--gb-light);
+}
+.techBadge {
+  font-size: 5px;
+  padding: 1px 4px;
+  background: var(--gb-dark2);
+  color: var(--gb-lightest);
+}
+
+/* Position menu */
+#posMenu {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+}
+
+.posBtn {
+  background: var(--gb-dark);
+  border-bottom: 1px solid var(--gb-dark2);
+  color: var(--gb-cream);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.posBtn:hover { background: var(--gb-dark2); color: var(--gb-lightest); }
+.posBtn.active { background: var(--gb-dark2); border-left: 3px solid var(--gb-light); }
+
+/* Back button */
+#backBtn {
+  background: var(--gb-shadow);
+  border: none;
+  border-top: 1px solid var(--gb-dark2);
+  color: var(--gb-light);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  padding: 6px;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+}
+#backBtn:hover { background: var(--gb-dark2); }
+
+/* ===== EFFECTS ===== */
+.shake {
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.shakeEnemy {
+  animation: shakeEnemy 0.3s ease;
+}
+@keyframes shakeEnemy {
+  0%,100% { transform: scaleX(-1) translateX(0); }
+  20% { transform: scaleX(-1) translateX(-6px); }
+  40% { transform: scaleX(-1) translateX(6px); }
+  60% { transform: scaleX(-1) translateX(-4px); }
+  80% { transform: scaleX(-1) translateX(4px); }
+}
+
+/* Flash overlay */
+#flashOverlay {
+  position: absolute;
+  inset: 0;
+  background: var(--gb-lightest);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+  z-index: 20;
+}
+
+/* Victory / defeat screen */
+#endScreen {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: var(--gb-dark);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 50;
+}
+
+#endTitle {
+  font-size: 14px;
+  color: var(--gb-lightest);
+  text-shadow: 3px 3px 0 var(--gb-shadow);
+  animation: pulse 1s ease infinite alternate;
+}
+
+@keyframes pulse {
+  from { color: var(--gb-lightest); }
+  to   { color: var(--gb-gold); }
+}
+
+#endSub { font-size: 7px; color: var(--gb-light); }
+#restartBtn {
+  margin-top: 8px;
+  background: var(--gb-dark2);
+  border: 2px solid var(--gb-light);
+  color: var(--gb-cream);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+#restartBtn:hover { background: var(--gb-light); color: var(--gb-dark); }
+
+/* Turn indicator */
+#turnTag {
+  position: absolute;
+  top: 4px; left: 4px;
+  font-size: 5px;
+  color: var(--gb-gold);
+  background: var(--gb-shadow);
+  padding: 2px 5px;
+  border: 1px solid var(--gb-dark2);
+  z-index: 5;
+}
+
+/* Round indicator */
+#roundTag {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 5px;
+  color: var(--gb-light);
+  background: var(--gb-shadow);
+  padding: 2px 5px;
+  border: 1px solid var(--gb-dark2);
+  z-index: 5;
+  white-space: nowrap;
+}
+
+/* Status effect badges */
+.statusBadge {
+  display: inline-block;
+  font-size: 5px;
+  padding: 1px 3px;
+  margin: 1px;
+  background: var(--gb-shadow);
+  border: 1px solid var(--gb-red);
+  color: var(--gb-red);
+}
+
+/* Art badge colors */
+.art-bjj     { color: #4488ff; }
+.art-boxe    { color: #ff4444; }
+.art-karate  { color: #ff8800; }
+.art-muay    { color: #ff2266; }
+.art-wrestling { color: #88cc00; }
+
+</style>
+</head>
+<body>
+
+<div id="gameWrapper">
+  <div id="gameTitle">FIGHTER'S PATH — ALPHA v0.1</div>
+
+  <div id="screen">
+    <div id="battleScene">
+
+      <!-- BATTLE FIELD -->
+      <div id="battleField">
+        <div id="flashOverlay"></div>
+        <div id="turnTag">TURNO DO JOGADOR</div>
+        <div id="roundTag">ROUND 1</div>
+        <div id="positionBanner">POSIÇÃO: EM PÉ</div>
+
+        <canvas id="playerSprite" width="48" height="64"></canvas>
+        <canvas id="enemySprite"  width="48" height="64"></canvas>
+
+        <!-- Player stats -->
+        <div class="statBox" id="playerStats">
+          <div class="statName" id="playerName">RUI SANTOS</div>
+          <div class="barRow">
+            <div class="barLabel">HP</div>
+            <div class="barTrack"><div class="barFill hp" id="playerHpBar" style="width:100%"></div></div>
+            <div class="barNum" id="playerHpNum">100/100</div>
+          </div>
+          <div class="barRow">
+            <div class="barLabel">ST</div>
+            <div class="barTrack"><div class="barFill st" id="playerStBar" style="width:100%"></div></div>
+            <div class="barNum" id="playerStNum">80/80</div>
+          </div>
+          <div id="playerStatus"></div>
+        </div>
+
+        <!-- Enemy stats -->
+        <div class="statBox" id="enemyStats">
+          <div class="statName" id="enemyName">CARLOS "FORMIGA"</div>
+          <div class="barRow">
+            <div class="barLabel">HP</div>
+            <div class="barTrack"><div class="barFill hp" id="enemyHpBar" style="width:100%"></div></div>
+            <div class="barNum" id="enemyHpNum">120/120</div>
+          </div>
+          <div class="barRow">
+            <div class="barLabel">ST</div>
+            <div class="barTrack"><div class="barFill st" id="enemyStBar" style="width:100%"></div></div>
+            <div class="barNum" id="enemyStNum">90/90</div>
+          </div>
+          <div id="enemyStatus"></div>
+        </div>
+      </div>
+
+      <!-- LOWER UI -->
+      <div id="lowerUI">
+        <div id="msgBox">
+          <span id="msgText">Carlos "Formiga" quer lutar!</span>
+          <span class="cursor" id="msgCursor"></span>
+        </div>
+
+        <div id="menuArea">
+          <!-- MAIN MENU -->
+          <div id="mainMenu">
+            <button class="mainBtn" onclick="showTechMenu()">⚔ TÉCNICAS</button>
+            <button class="mainBtn" onclick="showPosMenu()">🔄 POSIÇÃO</button>
+            <button class="mainBtn" onclick="doRest()">💤 DESCANSAR</button>
+            <button class="mainBtn" onclick="doFlee()">🏃 FUGIR</button>
+          </div>
+
+          <!-- TECHNIQUE MENU -->
+          <div id="techMenu"></div>
+
+          <!-- POSITION MENU -->
+          <div id="posMenu"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="endScreen">
+      <div id="endTitle">VITÓRIA!</div>
+      <div id="endSub">Faixa obtida: BJJ Branco</div>
+      <button id="restartBtn" onclick="restartGame()">▶ JOGAR NOVAMENTE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== PIXEL ART SPRITE DRAWING =====
+function drawFighter(canvas, palette, isEnemy, state) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+
+  const scale = 4;
+  const pw = canvas.width / scale;   // 12
+  const ph = canvas.height / scale;  // 16
+
+  const c = {
+    skin:  palette.skin,
+    hair:  palette.hair,
+    gi:    palette.gi,
+    belt:  palette.belt,
+    dark:  palette.dark,
+    light: palette.light,
+    outline: '#0a280a',
+  };
+
+  // 12x16 pixel sprite grid
+  // Row 0-2: head
+  // Row 3: neck/shoulders
+  // Row 4-8: torso
+  // Row 9-11: hips/belt
+  // Row 12-15: legs
+
+  const px = (x, y, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * scale, y * scale, scale, scale);
+  };
+
+  // Idle stance
+  if (state === 'idle' || state === 'ground') {
+    // Head
+    px(4,0,c.outline); px(5,0,c.outline); px(6,0,c.outline); px(7,0,c.outline);
+    px(3,1,c.outline); px(4,1,c.hair);   px(5,1,c.hair);   px(6,1,c.hair);   px(7,1,c.hair);   px(8,1,c.outline);
+    px(3,2,c.outline); px(4,2,c.skin);   px(5,2,c.skin);   px(6,2,c.skin);   px(7,2,c.skin);   px(8,2,c.outline);
+    px(3,3,c.outline); px(4,3,c.skin);   px(5,3,c.skin);   px(6,3,c.skin);   px(7,3,c.skin);   px(8,3,c.outline);
+    px(4,4,c.outline); px(5,4,c.skin);   px(6,4,c.skin);   px(7,4,c.outline);
+
+    // Shoulders + torso
+    px(2,5,c.gi);  px(3,5,c.gi);  px(4,5,c.gi);  px(5,5,c.gi);  px(6,5,c.gi);  px(7,5,c.gi);  px(8,5,c.gi);  px(9,5,c.gi);
+    px(2,6,c.gi);  px(3,6,c.gi);  px(4,6,c.gi);  px(5,6,c.gi);  px(6,6,c.gi);  px(7,6,c.gi);  px(8,6,c.gi);  px(9,6,c.gi);
+    px(3,7,c.gi);  px(4,7,c.gi);  px(5,7,c.dark); px(6,7,c.dark); px(7,7,c.gi);  px(8,7,c.gi);
+    px(3,8,c.gi);  px(4,8,c.gi);  px(5,8,c.dark); px(6,8,c.dark); px(7,8,c.gi);  px(8,8,c.gi);
+
+    // Arms
+    px(1,5,c.gi);  px(1,6,c.gi);  px(1,7,c.gi);  px(2,8,c.skin);
+    px(10,5,c.gi); px(10,6,c.gi); px(10,7,c.gi); px(9,8,c.skin);
+
+    // Belt
+    px(3,9,c.belt); px(4,9,c.belt); px(5,9,c.belt); px(6,9,c.belt); px(7,9,c.belt); px(8,9,c.belt);
+
+    // Hips/pants
+    px(3,10,c.gi);  px(4,10,c.gi);  px(5,10,c.gi);  px(6,10,c.gi);  px(7,10,c.gi);  px(8,10,c.gi);
+
+    // Legs
+    if (state === 'ground') {
+      // Ground position — crouching
+      px(3,11,c.gi); px(4,11,c.gi); px(5,11,c.gi); px(6,11,c.gi); px(7,11,c.gi); px(8,11,c.gi);
+      px(2,12,c.gi); px(3,12,c.gi); px(4,12,c.gi); px(7,12,c.gi); px(8,12,c.gi); px(9,12,c.gi);
+      px(2,13,c.gi); px(3,13,c.gi); px(9,13,c.gi); px(10,13,c.gi);
+    } else {
+      // Standing
+      px(3,11,c.gi); px(4,11,c.gi); px(5,11,c.gi); px(6,11,c.gi); px(7,11,c.gi); px(8,11,c.gi);
+      px(3,12,c.gi); px(4,12,c.gi); px(7,12,c.gi); px(8,12,c.gi);
+      px(3,13,c.gi); px(4,13,c.gi); px(7,13,c.gi); px(8,13,c.gi);
+      px(3,14,c.dark); px(4,14,c.dark); px(7,14,c.dark); px(8,14,c.dark);
+      px(3,15,c.dark); px(4,15,c.dark); px(7,15,c.dark); px(8,15,c.dark);
+    }
+  }
+
+  if (state === 'attack') {
+    // Punch forward pose
+    px(4,0,c.outline); px(5,0,c.outline); px(6,0,c.outline); px(7,0,c.outline);
+    px(3,1,c.outline); px(4,1,c.hair);   px(5,1,c.hair);   px(6,1,c.hair);   px(7,1,c.hair);   px(8,1,c.outline);
+    px(3,2,c.outline); px(4,2,c.skin);   px(5,2,c.skin);   px(6,2,c.skin);   px(7,2,c.skin);   px(8,2,c.outline);
+    px(3,3,c.outline); px(4,3,c.skin);   px(5,3,c.skin);   px(6,3,c.skin);   px(7,3,c.skin);   px(8,3,c.outline);
+
+    px(2,4,c.gi); px(3,4,c.gi); px(4,4,c.gi); px(5,4,c.gi); px(6,4,c.gi); px(7,4,c.gi); px(8,4,c.gi);
+    px(2,5,c.gi); px(3,5,c.gi); px(4,5,c.dark); px(5,5,c.dark); px(6,5,c.gi); px(7,5,c.gi); px(8,5,c.gi);
+    px(2,6,c.gi); px(3,6,c.gi); px(4,6,c.dark); px(5,6,c.dark); px(6,6,c.gi); px(7,6,c.gi); px(8,6,c.gi);
+    px(3,7,c.gi); px(4,7,c.gi); px(5,7,c.gi); px(6,7,c.gi); px(7,7,c.gi);
+    // Extended arm
+    px(8,5,c.gi); px(9,5,c.gi); px(10,5,c.gi); px(11,5,c.skin);
+    // Back arm down
+    px(1,5,c.gi); px(1,6,c.gi); px(1,7,c.gi);
+
+    px(3,8,c.belt); px(4,8,c.belt); px(5,8,c.belt); px(6,8,c.belt); px(7,8,c.belt);
+
+    px(3,9,c.gi); px(4,9,c.gi); px(5,9,c.gi); px(6,9,c.gi); px(7,9,c.gi);
+    px(3,10,c.gi); px(4,10,c.gi); px(7,10,c.gi); px(8,10,c.gi);
+    px(3,11,c.gi); px(4,11,c.gi); px(7,11,c.gi); px(8,11,c.gi);
+    px(3,12,c.dark); px(4,12,c.dark); px(7,12,c.dark); px(8,12,c.dark);
+  }
+
+  if (state === 'hurt') {
+    // Recoil pose
+    px(5,0,c.outline); px(6,0,c.outline); px(7,0,c.outline); px(8,0,c.outline);
+    px(4,1,c.hair); px(5,1,c.hair); px(6,1,c.hair); px(7,1,c.hair); px(8,1,c.outline);
+    px(4,2,c.skin); px(5,2,c.skin); px(6,2,c.skin); px(7,2,c.skin); px(8,2,c.outline);
+    px(4,3,c.skin); px(5,3,c.skin); px(6,3,c.skin); px(7,3,c.skin);
+
+    px(3,4,c.gi); px(4,4,c.gi); px(5,4,c.gi); px(6,4,c.gi); px(7,4,c.gi); px(8,4,c.gi); px(9,4,c.gi);
+    px(3,5,c.gi); px(4,5,c.dark); px(5,5,c.dark); px(6,5,c.gi); px(7,5,c.gi); px(8,5,c.gi);
+    px(3,6,c.gi); px(4,6,c.gi); px(5,6,c.gi); px(6,6,c.gi); px(7,6,c.gi);
+    // Arms raised
+    px(1,3,c.gi); px(2,4,c.gi);
+    px(10,3,c.gi); px(9,4,c.gi);
+    px(3,7,c.belt); px(4,7,c.belt); px(5,7,c.belt); px(6,7,c.belt); px(7,7,c.belt);
+    px(3,8,c.gi); px(4,8,c.gi); px(5,8,c.gi); px(6,8,c.gi); px(7,8,c.gi);
+    px(4,9,c.gi); px(5,9,c.gi); px(6,9,c.gi); px(7,9,c.gi);
+    px(4,10,c.dark); px(5,10,c.dark); px(6,10,c.dark); px(7,10,c.dark);
+  }
+}
+
+// ===== GAME DATA =====
+const POSITIONS = ['EM PÉ', 'CLINCH', 'DERRUBADA', 'CHÃO'];
+
+const TECHNIQUES = [
+  // BJJ
+  { id:'armbar',    name:'ARMBAR',       art:'bjj',      artLabel:'BJJ',      pos:['CHÃO'],             baseDmg:28, cost:20, effect:'stun',   desc:'Chave de braço devastadora' },
+  { id:'triangle',  name:'TRIÂNGULO',    art:'bjj',      artLabel:'BJJ',      pos:['CHÃO'],             baseDmg:25, cost:18, effect:'stun',   desc:'Estrangulamento com as pernas' },
+  { id:'guard',     name:'GUARDA FECHADA',art:'bjj',     artLabel:'BJJ',      pos:['CHÃO','DERRUBADA'], baseDmg:10, cost:8,  effect:'defend', desc:'Posição defensiva no chão' },
+  { id:'sweep',     name:'VARREDURA',    art:'bjj',      artLabel:'BJJ',      pos:['CHÃO'],             baseDmg:15, cost:12, effect:null,     desc:'Inverte a posição no chão' },
+  // BOXE
+  { id:'jab',       name:'JAB',          art:'boxe',     artLabel:'BOXE',     pos:['EM PÉ','CLINCH'],   baseDmg:14, cost:8,  effect:null,     desc:'Soco rápido de distância' },
+  { id:'cruzado',   name:'CRUZADO',      art:'boxe',     artLabel:'BOXE',     pos:['EM PÉ'],            baseDmg:22, cost:14, effect:null,     desc:'Soco pesado com a mão direita' },
+  { id:'gancho',    name:'GANCHO',       art:'boxe',     artLabel:'BOXE',     pos:['EM PÉ','CLINCH'],   baseDmg:20, cost:14, effect:'stun',   desc:'Gancho curto e explosivo' },
+  { id:'uppercut',  name:'UPPERCUT',     art:'boxe',     artLabel:'BOXE',     pos:['CLINCH','EM PÉ'],   baseDmg:24, cost:16, effect:null,     desc:'Uppercut de baixo para cima' },
+  // KARATE
+  { id:'maegeri',   name:'MAE-GERI',     art:'karate',   artLabel:'KARATE',   pos:['EM PÉ'],            baseDmg:20, cost:12, effect:null,     desc:'Pontapé frontal direto' },
+  { id:'gyaku',     name:'GYAKU-ZUKI',   art:'karate',   artLabel:'KARATE',   pos:['EM PÉ'],            baseDmg:18, cost:10, effect:null,     desc:'Soco reverso com rotação' },
+  { id:'mawashi',   name:'MAWASHI-GERI', art:'karate',   artLabel:'KARATE',   pos:['EM PÉ'],            baseDmg:26, cost:18, effect:'stun',   desc:'Pontapé circular à cabeça' },
+  // WRESTLING
+  { id:'takedown',  name:'TAKEDOWN',     art:'wrestling',artLabel:'WRESTLING', pos:['EM PÉ','CLINCH'],   baseDmg:12, cost:16, effect:'ground', desc:'Derruba o adversário' },
+  { id:'suplex',    name:'SUPLEX',       art:'wrestling',artLabel:'WRESTLING', pos:['CLINCH'],           baseDmg:30, cost:22, effect:'ground', desc:'Arremesso explosivo' },
+  // MUAY THAI
+  { id:'teep',      name:'TEEP',         art:'muay',     artLabel:'MUAY THAI',pos:['EM PÉ'],            baseDmg:16, cost:10, effect:null,     desc:'Pontapé de empurrão' },
+  { id:'joelho',    name:'JOELHO',       art:'muay',     artLabel:'MUAY THAI',pos:['CLINCH'],           baseDmg:22, cost:14, effect:null,     desc:'Joelho poderoso no clinch' },
+  { id:'cotovelo',  name:'COTOVELO',     art:'muay',     artLabel:'MUAY THAI',pos:['CLINCH','EM PÉ'],   baseDmg:26, cost:16, effect:'bleed',  desc:'Cotovelo cortante' },
+];
+
+// Position change effects
+const POS_EFFECTS = {
+  'ground':  'CHÃO',
+  'clinch':  'CLINCH',
+};
+
+// Enemy AI techniques (subset)
+const ENEMY_TECHS = [
+  { id:'e_guard',    name:'GUARDA FECHADA', art:'bjj', pos:['CHÃO','DERRUBADA'], baseDmg:8,  cost:6,  effect:'defend' },
+  { id:'e_armbar',   name:'ARMBAR',         art:'bjj', pos:['CHÃO'],             baseDmg:26, cost:18, effect:'stun'   },
+  { id:'e_takedown', name:'TAKEDOWN',       art:'wrestling', pos:['EM PÉ','CLINCH'], baseDmg:10, cost:14, effect:'ground' },
+  { id:'e_sweep',    name:'VARREDURA',      art:'bjj', pos:['CHÃO'],             baseDmg:14, cost:10, effect:null     },
+  { id:'e_jab',      name:'JAB',            art:'boxe', pos:['EM PÉ','CLINCH'],  baseDmg:12, cost:8,  effect:null     },
+  { id:'e_cruzado',  name:'CRUZADO',        art:'boxe', pos:['EM PÉ'],           baseDmg:20, cost:12, effect:null     },
+];
+
+// Sprite palettes
+const PLAYER_PAL = { skin:'#f0c890', hair:'#1a0a00', gi:'#e8e4d0', belt:'#f0f000', dark:'#3060b0', light:'#ffffff' };
+const ENEMY_PAL  = { skin:'#d4a870', hair:'#0a0a0a', gi:'#3060b0', belt:'#ffffff', dark:'#1a3060', light:'#a0b0ff' };
+
+// ===== GAME STATE =====
+let G = {};
+
+function initGame() {
+  G = {
+    round: 1,
+    turn: 'player', // 'player' | 'enemy'
+    position: 'EM PÉ',
+    busy: false,
+    playerStunned: false,
+    enemyStunned: false,
+    playerBleeding: false,
+    enemyBleeding: false,
+    player: {
+      name: 'RUI SANTOS',
+      hp: 100, maxHp: 100,
+      st: 80, maxSt: 80,
+    },
+    enemy: {
+      name: 'CARLOS "FORMIGA"',
+      hp: 120, maxHp: 120,
+      st: 90, maxSt: 90,
+    },
+    deck: ['jab','cruzado','gancho','armbar','guard','takedown'], // player's equipped moves
+  };
+}
+
+// ===== RENDERING =====
+function render() {
+  // Sprites
+  const pState = G.position === 'CHÃO' ? 'ground' : 'idle';
+  drawFighter(document.getElementById('playerSprite'), PLAYER_PAL, false, pState);
+  drawFighter(document.getElementById('enemySprite'),  ENEMY_PAL,  true,  pState);
+
+  // HP/ST bars
+  updateBars();
+
+  // Position banner
+  document.getElementById('positionBanner').textContent = 'POSIÇÃO: ' + G.position;
+
+  // Turn tag
+  document.getElementById('turnTag').textContent = G.turn === 'player' ? 'SEU TURNO' : 'ADVERSÁRIO...';
+  document.getElementById('turnTag').style.color = G.turn === 'player' ? 'var(--gb-gold)' : 'var(--gb-red)';
+
+  // Round
+  document.getElementById('roundTag').textContent = 'ROUND ' + G.round;
+
+  // Status badges
+  renderStatus('playerStatus', G.playerStunned, G.playerBleeding);
+  renderStatus('enemyStatus',  G.enemyStunned,  G.enemyBleeding);
+}
+
+function renderStatus(elId, stunned, bleeding) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  if (stunned)  el.innerHTML += '<span class="statusBadge">ATORDOADO</span>';
+  if (bleeding) el.innerHTML += '<span class="statusBadge" style="border-color:var(--gb-red);color:var(--gb-red)">SANGRANDO</span>';
+}
+
+function updateBars() {
+  const p = G.player, e = G.enemy;
+  const pHpPct = Math.max(0, p.hp / p.maxHp * 100);
+  const eHpPct = Math.max(0, e.hp / e.maxHp * 100);
+
+  const pHpBar = document.getElementById('playerHpBar');
+  pHpBar.style.width = pHpPct + '%';
+  pHpBar.className = 'barFill hp' + (pHpPct < 30 ? ' low' : '');
+
+  document.getElementById('enemyHpBar').style.width = eHpPct + '%';
+  document.getElementById('enemyHpBar').className = 'barFill hp' + (eHpPct < 30 ? ' low' : '');
+
+  document.getElementById('playerStBar').style.width = Math.max(0, p.st / p.maxSt * 100) + '%';
+  document.getElementById('enemyStBar').style.width  = Math.max(0, e.st / e.maxSt * 100) + '%';
+
+  document.getElementById('playerHpNum').textContent = Math.max(0, p.hp) + '/' + p.maxHp;
+  document.getElementById('enemyHpNum').textContent  = Math.max(0, e.hp) + '/' + e.maxHp;
+  document.getElementById('playerStNum').textContent = Math.max(0, p.st) + '/' + p.maxSt;
+  document.getElementById('enemyStNum').textContent  = Math.max(0, e.st) + '/' + e.maxSt;
+}
+
+// ===== MESSAGE SYSTEM =====
+let msgQueue = [];
+let msgBusy = false;
+
+function msg(text, callback) {
+  msgQueue.push({ text, callback });
+  if (!msgBusy) processMsg();
+}
+
+function processMsg() {
+  if (msgQueue.length === 0) { msgBusy = false; return; }
+  msgBusy = true;
+  const { text, callback } = msgQueue.shift();
+  typeText(text, () => {
+    setTimeout(() => {
+      if (callback) callback();
+      processMsg();
+    }, 800);
+  });
+}
+
+function typeText(text, done) {
+  const el = document.getElementById('msgText');
+  const cursor = document.getElementById('msgCursor');
+  cursor.style.display = 'none';
+  el.textContent = '';
+  let i = 0;
+  const iv = setInterval(() => {
+    el.textContent += text[i++];
+    if (i >= text.length) {
+      clearInterval(iv);
+      cursor.style.display = 'inline-block';
+      if (done) done();
+    }
+  }, 28);
+}
+
+// ===== MENUS =====
+function showMain() {
+  document.getElementById('mainMenu').style.display = 'grid';
+  document.getElementById('techMenu').style.display = 'none';
+  document.getElementById('posMenu').style.display  = 'none';
+}
+
+function showTechMenu() {
+  if (G.busy || G.turn !== 'player') return;
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('posMenu').style.display  = 'none';
+
+  const tm = document.getElementById('techMenu');
+  tm.style.display = 'flex';
+  tm.innerHTML = '';
+
+  G.deck.forEach(tid => {
+    const tech = TECHNIQUES.find(t => t.id === tid);
+    if (!tech) return;
+    const available = tech.pos.includes(G.position);
+    const canAfford = G.player.st >= tech.cost;
+    const btn = document.createElement('button');
+    btn.className = 'techBtn' + (!available || !canAfford ? ' disabled' : '');
+    btn.innerHTML = `
+      <span class="techName art-${tech.art}">${tech.name}</span>
+      <span class="techBadge">${tech.artLabel}</span>
+      <span class="techPos">${tech.pos[0]}</span>
+      <span class="techDmg">DMG:${tech.baseDmg}</span>
+      <span class="techCost">ST:${tech.cost}</span>
+    `;
+    if (available && canAfford) {
+      btn.onclick = () => playerUseTech(tech);
+    }
+    tm.appendChild(btn);
+  });
+
+  // Back
+  const back = document.createElement('button');
+  back.id = 'backBtn';
+  back.textContent = '◀ VOLTAR';
+  back.onclick = showMain;
+  tm.appendChild(back);
+}
+
+function showPosMenu() {
+  if (G.busy || G.turn !== 'player') return;
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('techMenu').style.display = 'none';
+
+  const pm = document.getElementById('posMenu');
+  pm.style.display = 'flex';
+  pm.innerHTML = '';
+
+  const posInfo = {
+    'EM PÉ':    'Distância longa. Striking eficaz.',
+    'CLINCH':   'Corpo a corpo. Joelhos e cotovelos.',
+    'DERRUBADA':'Transição para o chão.',
+    'CHÃO':     'Grappling. Submissions.',
+  };
+
+  POSITIONS.forEach(pos => {
+    const btn = document.createElement('button');
+    btn.className = 'posBtn' + (G.position === pos ? ' active' : '');
+    btn.innerHTML = `<span>${pos}</span><span style="font-size:5px;color:var(--gb-light)">${posInfo[pos]}</span>`;
+    btn.onclick = () => {
+      if (G.position === pos) { showMain(); return; }
+      doChangePosition(pos);
+    };
+    pm.appendChild(btn);
+  });
+
+  const back = document.createElement('button');
+  back.id = 'backBtn';
+  back.textContent = '◀ VOLTAR';
+  back.onclick = showMain;
+  pm.appendChild(back);
+}
+
+// ===== ACTIONS =====
+function playerUseTech(tech) {
+  if (G.busy || G.turn !== 'player') return;
+  G.busy = true;
+  showMain();
+
+  G.player.st -= tech.cost;
+
+  // Animate player attack
+  const pSprite = document.getElementById('playerSprite');
+  drawFighter(pSprite, PLAYER_PAL, false, 'attack');
+
+  // Flash
+  flash();
+
+  setTimeout(() => {
+    // Calculate damage
+    let dmg = tech.baseDmg + Math.floor(Math.random() * 8) - 3;
+    dmg = Math.max(1, dmg);
+
+    // Position bonus
+    if (tech.art === 'bjj' && G.position === 'CHÃO') dmg = Math.floor(dmg * 1.3);
+    if (tech.art === 'muay' && G.position === 'CLINCH') dmg = Math.floor(dmg * 1.2);
+    if (tech.art === 'boxe' && G.position === 'EM PÉ') dmg = Math.floor(dmg * 1.1);
+
+    G.enemy.hp -= dmg;
+
+    // Shake enemy
+    const eSprite = document.getElementById('enemySprite');
+    eSprite.classList.add('shakeEnemy');
+    drawFighter(eSprite, ENEMY_PAL, true, 'hurt');
+    setTimeout(() => {
+      eSprite.classList.remove('shakeEnemy');
+      drawFighter(eSprite, ENEMY_PAL, true, G.position === 'CHÃO' ? 'ground' : 'idle');
+    }, 400);
+
+    // Effect
+    let effectMsg = '';
+    if (tech.effect === 'stun') {
+      G.enemyStunned = true;
+      effectMsg = ' O adversário ficou ATORDOADO!';
+    } else if (tech.effect === 'bleed') {
+      G.enemyBleeding = true;
+      effectMsg = ' O adversário está SANGRANDO!';
+    } else if (tech.effect === 'ground' || tech.effect === 'defend') {
+      G.position = 'CHÃO';
+      effectMsg = ' Posição mudou para CHÃO!';
+    }
+
+    render();
+
+    msg(`Usaste ${tech.name}! Causaste ${dmg} de dano!${effectMsg}`, () => {
+      drawFighter(pSprite, PLAYER_PAL, false, G.position === 'CHÃO' ? 'ground' : 'idle');
+
+      if (G.enemy.hp <= 0) {
+        showVictory();
+        return;
+      }
+
+      G.turn = 'enemy';
+      G.busy = false;
+      render();
+
+      // Apply bleeding to enemy before enemy turn
+      if (G.enemyBleeding) G.enemy.hp -= 5;
+
+      setTimeout(() => enemyTurn(), 900);
+    });
+
+  }, 300);
+}
+
+function doChangePosition(pos) {
+  if (G.busy || G.turn !== 'player') return;
+  G.busy = true;
+  showMain();
+
+  const cost = 10;
+  G.player.st -= cost;
+  const old = G.position;
+  G.position = pos;
+  render();
+
+  msg(`Mudaste a posição de ${old} para ${pos}! (-${cost} ST)`, () => {
+    G.turn = 'enemy';
+    G.busy = false;
+    render();
+    setTimeout(() => enemyTurn(), 900);
+  });
+}
+
+function doRest() {
+  if (G.busy || G.turn !== 'player') return;
+  G.busy = true;
+  showMain();
+
+  const recover = Math.floor(Math.random() * 10) + 15;
+  G.player.st = Math.min(G.player.maxSt, G.player.st + recover);
+  render();
+
+  msg(`Recuperaste ${recover} pontos de Stamina!`, () => {
+    G.turn = 'enemy';
+    G.busy = false;
+    render();
+    setTimeout(() => enemyTurn(), 900);
+  });
+}
+
+function doFlee() {
+  if (G.busy || G.turn !== 'player') return;
+  G.busy = true;
+  showMain();
+  msg(`Tentaste fugir... mas Carlos bloqueia a saída!`, () => {
+    G.turn = 'enemy';
+    G.busy = false;
+    render();
+    setTimeout(() => enemyTurn(), 900);
+  });
+}
+
+// ===== ENEMY AI =====
+function enemyTurn() {
+  if (G.enemy.hp <= 0) return;
+  G.turn = 'enemy';
+  render();
+
+  // If stunned, skip
+  if (G.enemyStunned) {
+    G.enemyStunned = false;
+    msg(`${G.enemy.name} está ATORDOADO e perde o turno!`, () => {
+      endEnemyTurn();
+    });
+    return;
+  }
+
+  // AI: pick a usable technique
+  const usable = ENEMY_TECHS.filter(t =>
+    t.pos.includes(G.position) && G.enemy.st >= t.cost
+  );
+
+  // Low HP → prefer ground game (BJJ)
+  let chosen;
+  if (G.enemy.hp < G.enemy.maxHp * 0.35 && G.position !== 'CHÃO') {
+    // Try to take it down
+    const td = usable.find(t => t.effect === 'ground');
+    chosen = td || usable[Math.floor(Math.random() * usable.length)];
+  } else if (G.position === 'CHÃO') {
+    // On ground, prefer submissions
+    const sub = usable.find(t => t.art === 'bjj' && t.effect === 'stun');
+    chosen = sub || usable[Math.floor(Math.random() * usable.length)];
+  } else {
+    chosen = usable[Math.floor(Math.random() * usable.length)];
+  }
+
+  if (!chosen) {
+    // Rest
+    const recover = Math.floor(Math.random() * 8) + 10;
+    G.enemy.st = Math.min(G.enemy.maxSt, G.enemy.st + recover);
+    msg(`${G.enemy.name} recupera fôlego! (+${recover} ST)`, () => {
+      endEnemyTurn();
+    });
+    return;
+  }
+
+  G.enemy.st -= chosen.cost;
+
+  // Enemy attack animation
+  const eSprite = document.getElementById('enemySprite');
+  drawFighter(eSprite, ENEMY_PAL, true, 'attack');
+  flash();
+
+  setTimeout(() => {
+    let dmg = chosen.baseDmg + Math.floor(Math.random() * 6) - 2;
+    dmg = Math.max(1, dmg);
+
+    if (chosen.art === 'bjj' && G.position === 'CHÃO') dmg = Math.floor(dmg * 1.25);
+
+    G.player.hp -= dmg;
+
+    const pSprite = document.getElementById('playerSprite');
+    pSprite.classList.add('shake');
+    drawFighter(pSprite, PLAYER_PAL, false, 'hurt');
+    setTimeout(() => {
+      pSprite.classList.remove('shake');
+      drawFighter(pSprite, PLAYER_PAL, false, G.position === 'CHÃO' ? 'ground' : 'idle');
+    }, 400);
+
+    let effectMsg = '';
+    if (chosen.effect === 'stun') {
+      G.playerStunned = true;
+      effectMsg = ' Ficaste ATORDOADO!';
+    } else if (chosen.effect === 'ground') {
+      G.position = 'CHÃO';
+      effectMsg = ' Foste DERRUBADO para o chão!';
+    }
+
+    render();
+
+    msg(`${G.enemy.name} usou ${chosen.name}! Sofreste ${dmg} de dano!${effectMsg}`, () => {
+      drawFighter(eSprite, ENEMY_PAL, true, G.position === 'CHÃO' ? 'ground' : 'idle');
+
+      if (G.player.hp <= 0) {
+        showDefeat();
+        return;
+      }
+
+      endEnemyTurn();
+    });
+  }, 300);
+}
+
+function endEnemyTurn() {
+  // Bleeding on player
+  if (G.playerBleeding) { G.player.hp -= 5; render(); }
+
+  G.round++;
+  G.turn = 'player';
+  G.busy = false;
+
+  // Stun check player
+  if (G.playerStunned) {
+    G.playerStunned = false;
+    msg(`Estás ATORDOADO! Perdes o turno!`, () => {
+      render();
+      G.turn = 'enemy';
+      setTimeout(() => enemyTurn(), 900);
+    });
+    return;
+  }
+
+  render();
+  msg(`Round ${G.round}. O que vais fazer?`);
+}
+
+// ===== EFFECTS =====
+function flash() {
+  const ov = document.getElementById('flashOverlay');
+  ov.style.opacity = '0.7';
+  setTimeout(() => ov.style.opacity = '0', 150);
+}
+
+// ===== END STATES =====
+function showVictory() {
+  G.busy = true;
+  const es = document.getElementById('endScreen');
+  es.style.display = 'flex';
+  document.getElementById('endTitle').textContent = 'VITÓRIA!';
+  document.getElementById('endSub').textContent = 'Faixa obtida: BJJ Branco | EXP: +120';
+  es.style.background = 'var(--gb-dark)';
+}
+
+function showDefeat() {
+  G.busy = true;
+  const es = document.getElementById('endScreen');
+  es.style.display = 'flex';
+  document.getElementById('endTitle').textContent = 'K.O.';
+  document.getElementById('endSub').textContent = 'Precisas de treinar mais!';
+  es.style.background = 'var(--gb-shadow)';
+}
+
+function restartGame() {
+  document.getElementById('endScreen').style.display = 'none';
+  initGame();
+  render();
+  showMain();
+  msgQueue = [];
+  msgBusy = false;
+  msg(`Round 1! ${G.enemy.name} quer lutar!`);
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', e => {
+  if (G.busy || G.turn !== 'player') return;
+  const mm = document.getElementById('mainMenu');
+  const tm = document.getElementById('techMenu');
+  if (e.key === 'z' || e.key === 'Z') {
+    if (tm.style.display === 'flex') { showMain(); return; }
+    showTechMenu();
+  }
+  if (e.key === 'x' || e.key === 'X') showMain();
+  if (e.key === '1') showTechMenu();
+  if (e.key === '2') showPosMenu();
+  if (e.key === '3') doRest();
+  if (e.key === '4') doFlee();
+});
+
+// ===== INIT =====
+initGame();
+render();
+showMain();
+setTimeout(() => msg(`Round 1! ${G.enemy.name} quer lutar!`), 300);
+</script>
+</body>
+</html>

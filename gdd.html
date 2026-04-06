@@ -1,0 +1,801 @@
+<link rel="shortcut icon" href="media/logo.png" type="image/x-icon">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --gold: #C9A84C;
+    --gold-dark: #8B6914;
+    --ink: #1A1A1A;
+    --paper: #F5F0E8;
+    --paper2: #EDE7D4;
+    --red: #9B2335;
+    --muted: #6B6256;
+    --border: rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body, .gdd-root {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .gdd-root {
+    padding: 0 0 2rem;
+  }
+
+  .gdd-header {
+    background: var(--ink);
+    padding: 2.5rem 2rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gdd-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 8px,
+      rgba(201,168,76,0.06) 8px,
+      rgba(201,168,76,0.06) 9px
+    );
+    pointer-events: none;
+  }
+
+  .gdd-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .gdd-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    color: #fff;
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+  }
+
+  .gdd-title span {
+    color: var(--gold);
+  }
+
+  .gdd-subtitle {
+    font-family: 'Crimson Pro', serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    color: rgba(255,255,255,0.55);
+    margin-top: 0.75rem;
+  }
+
+  .gdd-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .gdd-meta-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+  }
+
+  .gdd-meta-item strong {
+    color: var(--gold);
+    display: block;
+    font-size: 13px;
+    letter-spacing: 0;
+    font-family: 'Bebas Neue', sans-serif;
+  }
+
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0 1rem;
+    background: var(--paper);
+    overflow-x: auto;
+    gap: 0;
+  }
+
+  .nav-tab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s;
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    margin-bottom: -1.5px;
+  }
+
+  .nav-tab:hover { color: var(--ink); }
+  .nav-tab.active {
+    color: var(--red);
+    border-bottom-color: var(--red);
+    font-weight: 500;
+  }
+
+  .tab-content { display: none; padding: 1.5rem 1.5rem; }
+  .tab-content.active { display: block; }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-title .accent { color: var(--red); }
+
+  p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #333;
+    margin-bottom: 0.8rem;
+  }
+
+  .callout {
+    background: var(--paper2);
+    border-left: 3px solid var(--gold);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+
+  .arts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .art-card {
+    background: var(--paper2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .art-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .art-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .art-card.bjj::before { background: #003087; }
+  .art-card.muaythai::before { background: #DC143C; }
+  .art-card.boxe::before { background: #8B0000; }
+  .art-card.wrestling::before { background: #B8860B; }
+  .art-card.judo::before { background: #0A0A0A; }
+  .art-card.karate::before { background: #FF6600; }
+  .art-card.capoeira::before { background: #009C3B; }
+  .art-card.kungfu::before { background: #CC0000; }
+  .art-card.taekwondo::before { background: #003087; }
+  .art-card.sambo::before { background: #4B0082; }
+  .art-card.mma::before { background: var(--gold); }
+
+  .art-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    margin-bottom: 0.2rem;
+  }
+
+  .art-origin {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .art-stat-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .art-stat {
+    font-size: 0.8rem;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .stat-strike { background: #FDECEA; color: #9B2335; }
+  .stat-grapple { background: #EAF0FF; color: #003087; }
+  .stat-clinch { background: #FFF3E0; color: #B8600A; }
+  .stat-ground { background: #F0F4EE; color: #2D6A2D; }
+
+  .art-desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 0.4rem;
+  }
+
+  .gym-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .gym-card {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    background: var(--paper2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+  }
+
+  .gym-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--gold);
+    line-height: 1;
+    text-align: center;
+  }
+
+  .gym-city {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+  }
+
+  .gym-art {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .gym-master {
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .gym-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: var(--ink);
+    color: var(--gold);
+  }
+
+  .story-beats {
+    position: relative;
+    padding-left: 2rem;
+    margin-top: 1rem;
+  }
+
+  .story-beats::before {
+    content: '';
+    position: absolute;
+    left: 7px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: var(--gold);
+    opacity: 0.4;
+  }
+
+  .beat {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+
+  .beat::before {
+    content: '';
+    position: absolute;
+    left: -1.65rem; top: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  .beat-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    color: var(--red);
+    margin-bottom: 0.15rem;
+  }
+
+  .beat p {
+    margin-bottom: 0;
+    font-size: 0.95rem;
+  }
+
+  .mechanic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .mech-card {
+    background: var(--paper2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+  }
+
+  .mech-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+  }
+
+  .mech-body {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #555;
+  }
+
+  .table-style {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    margin-top: 1rem;
+  }
+
+  .table-style th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    background: var(--paper2);
+  }
+
+  .table-style td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 0.5px solid var(--border);
+    color: #333;
+    vertical-align: top;
+  }
+
+  .table-style tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--ink);
+    color: #fff;
+  }
+
+  .badge.gold { background: var(--gold); color: var(--ink); }
+  .badge.red { background: var(--red); color: #fff; }
+
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .detail-overlay.open { display: flex; }
+
+  .detail-box {
+    background: var(--paper);
+    border-radius: 8px;
+    padding: 1.5rem;
+    max-width: 420px;
+    width: 100%;
+    position: relative;
+  }
+
+  .detail-close {
+    position: absolute;
+    top: 0.75rem; right: 1rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: monospace;
+  }
+
+  .detail-art-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--ink);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+
+  .detail-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.3rem 0;
+  }
+
+  .detail-bar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .detail-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: var(--paper2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .detail-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+</style>
+
+<div class="gdd-root">
+  <div class="gdd-header">
+    <div class="gdd-label">Game Design Document — v1.0</div>
+    <div class="gdd-title">FIGHTER<span>'S</span><br>PATH</div>
+    <div class="gdd-subtitle">Um RPG de artes marciais no coração de Portugal</div>
+    <div class="gdd-meta">
+      <div class="gdd-meta-item"><strong>Género</strong>RPG / Adventure</div>
+      <div class="gdd-meta-item"><strong>Plataforma</strong>PC / Mobile</div>
+      <div class="gdd-meta-item"><strong>Estilo</strong>Top-down 2D</div>
+      <div class="gdd-meta-item"><strong>Ginásios</strong>10 + Final</div>
+      <div class="gdd-meta-item"><strong>Artes</strong>10 Disciplinas</div>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('conceito')">Conceito</button>
+    <button class="nav-tab" onclick="switchTab('artes')">Artes Marciais</button>
+    <button class="nav-tab" onclick="switchTab('ginasios')">Ginásios</button>
+    <button class="nav-tab" onclick="switchTab('historia')">História</button>
+    <button class="nav-tab" onclick="switchTab('mecanicas')">Mecânicas</button>
+    <button class="nav-tab" onclick="switchTab('lutadores')">Lutadores</button>
+  </div>
+
+  <div id="tab-conceito" class="tab-content active" style="background: var(--paper);">
+    <div class="section-title">Visão <span class="accent">Geral</span></div>
+    <p><em>Fighter's Path</em> é um RPG de aventura top-down inspirado em Pokémon, mas ambientado em Portugal contemporâneo. Em vez de capturar criaturas, o jogador treina artes marciais em ginásios espalhados pelo país, recolhendo técnicas como se fossem movimentos, e construindo um estilo de luta único que culmina no <strong>Campeonato Nacional de MMA</strong>.</p>
+
+    <div class="callout">
+      "Não existe o melhor estilo de luta — existe o melhor lutador. E o melhor lutador domina todos os estilos."
+    </div>
+
+    <div class="section-title" style="margin-top:1.5rem;">O <span class="accent">Loop</span> Principal</div>
+    <p>O jogador viaja entre cidades portuguesas, encontra ginásios de artes marciais, treina com os mestres (equivalentes aos líderes de ginásio do Pokémon), aprende técnicas e desbloqueia novos estilos. Cada ginásio derrotado dá uma <strong>Faixa de Mestria</strong>. Com as 10 Faixas, o jogador qualifica-se para o <strong>Fight Nacional</strong> em Lisboa.</p>
+
+    <div class="mechanic-grid">
+      <div class="mech-card">
+        <div class="mech-title">Exploração</div>
+        <div class="mech-body">Portugal em pixel art. Viagem entre cidades, ginásios escondidos, treinos aleatórios em zonas rurais e litorais.</div>
+      </div>
+      <div class="mech-card">
+        <div class="mech-title">Combate por turnos</div>
+        <div class="mech-body">Sistema ATB adaptado. Cada técnica tem custo de stamina, posição (pé / clench / chão) e eficácia por estilo.</div>
+      </div>
+      <div class="mech-card">
+        <div class="mech-title">Progressão híbrida</div>
+        <div class="mech-body">O personagem não tem "nível". Evolui por disciplina. Treinar BJJ aumenta o Grapple Rating, Muay Thai aumenta Strike Rating.</div>
+      </div>
+      <div class="mech-card">
+        <div class="mech-title">Composição de estilo</div>
+        <div class="mech-body">Deck de técnicas (até 12 movimentos equipados). O jogador escolhe o seu "meta" pessoal antes de cada combate importante.</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:1.5rem;">Referências <span class="accent">Criativas</span></div>
+    <table class="table-style">
+      <tr>
+        <th>Referência</th><th>O que buscamos</th>
+      </tr>
+      <tr><td>Pokémon RSE / HGSS</td><td>Estrutura de ginásios, viagem pelo mapa, encontros aleatórios</td></tr>
+      <tr><td>Undertale</td><td>Narrativa com peso emocional, NPCs com personalidade real</td></tr>
+      <tr><td>Fight Night (série)</td><td>Fidelidade às artes marciais, animações de impacto</td></tr>
+      <tr><td>Karate Kid / Rocky</td><td>Arco de underdog, mentores marcantes, rivalidades</td></tr>
+      <tr><td>EA UFC / Undisputed</td><td>Sistema de posições no chão e em pé, transições táticas</td></tr>
+    </table>
+  </div>
+
+  <div id="tab-artes" class="tab-content" style="background: var(--paper);">
+    <div class="section-title">As 10 <span class="accent">Disciplinas</span></div>
+    <p>Cada arte marcial é um "tipo" com características únicas de combate, vantagens táticas e fraquezas. Clica em qualquer card para ver detalhes.</p>
+    <div class="arts-grid" id="arts-grid"></div>
+  </div>
+
+  <div id="tab-ginasios" class="tab-content" style="background: var(--paper);">
+    <div class="section-title">Os <span class="accent">10 Ginásios</span> de Portugal</div>
+    <p>Cada cidade tem um ginásio dedicado a uma arte marcial. O mestre é um personagem com história própria. A ordem sugerida segue uma progressão geográfica a sul.</p>
+    <div class="gym-list" id="gym-list"></div>
+  </div>
+
+  <div id="tab-historia" class="tab-content" style="background: var(--paper);">
+    <div class="section-title">Arco <span class="accent">Narrativo</span></div>
+    <p>A história não é linear — o jogador pode fazer os ginásios em qualquer ordem. Mas existe uma narrativa que se desenrola por trás: a revelação de quem é realmente o <strong>Campeão Atual</strong> e o que esconde.</p>
+
+    <div class="callout">
+      O protagonista começa sem passado — literalmente. Uma amnésia leve deixa em aberto quem ele era. Cada ginásio revela fragmentos.
+    </div>
+
+    <div class="story-beats">
+      <div class="beat">
+        <div class="beat-label">Ato I — O Início</div>
+        <p>O protagonista acorda em Braga sem memórias de combate, mas com o corpo de um atleta. Um velho mestre de Judo diz-lhe: "O teu corpo lembra o que a tua mente esqueceu." Começa a treinar.</p>
+      </div>
+      <div class="beat">
+        <div class="beat-label">Ato II — A Jornada</div>
+        <p>Percorre Portugal de norte a sul. Em cada cidade encontra um mestre, uma técnica, um fragmento do passado. Surge uma organização sombria — a <strong>Ordem do Cartel</strong> — que controla o desporto de combate nacional e decide quem sobe e quem cai.</p>
+      </div>
+      <div class="beat">
+        <div class="beat-label">Ato III — A Revelação</div>
+        <p>O protagonista descobre que já foi campeão. Foi derrotado por uma luta corrupta e ficou traumatizado. A Ordem do Cartel apagou os seus registos. Os mestres que o treinaram fizeram-no de propósito — para que ele voltasse sem o peso do ego.</p>
+      </div>
+      <div class="beat">
+        <div class="beat-label">Ato IV — O Campeonato</div>
+        <p>O <strong>Fight Nacional</strong> em Lisboa. O protagonista enfrenta os melhores representantes de cada arte, incluindo o Campeão Atual — um antigo companheiro de treino que escolheu o lado corrupto. A final não é só um combate: é uma escolha moral.</p>
+      </div>
+      <div class="beat">
+        <div class="beat-label">Epílogo</div>
+        <p>Vitória ou derrota, o protagonista torna-se o primeiro MMA completo do país. Vários finais possíveis dependendo de como o jogador combinou os estilos e das escolhas de diálogo ao longo do jogo.</p>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:1.5rem;">Personagens <span class="accent">Principais</span></div>
+    <table class="table-style">
+      <tr><th>Nome</th><th>Papel</th><th>Arte Base</th><th>Arco</th></tr>
+      <tr><td><strong>Rui Santos</strong></td><td>Protagonista</td><td>MMA (todas)</td><td>Recuperar identidade e título</td></tr>
+      <tr><td><strong>Sensei Fernão</strong></td><td>Mentor / Judo</td><td>Judo</td><td>Guardião do segredo da amnésia</td></tr>
+      <tr><td><strong>Ana Guerreiro</strong></td><td>Rival / Aliada</td><td>Muay Thai</td><td>Lutadora independente vs. o Cartel</td></tr>
+      <tr><td><strong>Viktor Sousa</strong></td><td>Antagonista principal</td><td>Sambo + BJJ</td><td>Campeão corrompido, ex-amigo</td></tr>
+      <tr><td><strong>Dom Marcelino</strong></td><td>Vilão organizacional</td><td>—</td><td>Líder da Ordem do Cartel</td></tr>
+    </table>
+  </div>
+
+  <div id="tab-mecanicas" class="tab-content" style="background: var(--paper);">
+    <div class="section-title">Sistema de <span class="accent">Combate</span></div>
+    <p>O combate é por turnos com um sistema de <strong>posições</strong>. As técnicas têm eficácia diferente conforme a posição atual do confronto.</p>
+
+    <table class="table-style">
+      <tr><th>Posição</th><th>Descrição</th><th>Estilos favorecidos</th></tr>
+      <tr><td><span class="badge">Standing</span></td><td>Em pé, distância média/longa</td><td>Boxe, Muay Thai, Karate, Taekwondo, Kung Fu</td></tr>
+      <tr><td><span class="badge">Clinch</span></td><td>Corpo a corpo, em pé</td><td>Muay Thai, Judo, Wrestling, Sambo</td></tr>
+      <tr><td><span class="badge">Takedown</span></td><td>Transição para o chão</td><td>Wrestling, Judo, Sambo</td></tr>
+      <tr><td><span class="badge">Ground</span></td><td>No chão, posição de controlo</td><td>BJJ, Sambo, Wrestling</td></tr>
+      <tr><td><span class="badge">Guard</span></td><td>No chão, por baixo</td><td>BJJ, Capoeira (esquiva)</td></tr>
+    </table>
+
+    <div class="section-title" style="margin-top:1.5rem;">Sistema de <span class="accent">Técnicas</span></div>
+    <p>Cada arte tem 15–20 técnicas desbloqueáveis. O deck ativo tem 12 slots. As técnicas têm 4 atributos:</p>
+
+    <div class="mechanic-grid">
+      <div class="mech-card">
+        <div class="mech-title">Dano Base</div>
+        <div class="mech-body">Dano numérico ao HP do adversário. Varia com stats do personagem na disciplina.</div>
+      </div>
+      <div class="mech-card">
+        <div class="mech-title">Custo de Stamina</div>
+        <div class="mech-body">Recurso partilhado. Gestão de energia é a chave — tal como numa luta real.</div>
+      </div>
+      <div class="mech-card">
+        <div class="mech-title">Efeito de Posição</div>
+        <div class="mech-body">A técnica pode mudar a posição do combate. Ex: Uchi-mata (Judo) faz Takedown.</div>
+      </div>
+      <div class="mech-card">
+        <div class="mech-title">Eficácia de Estilo</div>
+        <div class="mech-body">Técnicas de Striking são ineficazes contra lutadores de Judo que antecipam e atiram.</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:1.5rem;">Sistema de <span class="accent">Mestria</span></div>
+    <p>Em vez de níveis, o personagem tem ratings por disciplina (0–100). Treinar aumenta o rating. O rating determina a eficácia das técnicas dessa arte, a resistência contra ela, e desbloqueia técnicas avançadas.</p>
+
+    <table class="table-style">
+      <tr><th>Rating</th><th>Grau</th><th>Desbloqueios</th></tr>
+      <tr><td>0–20</td><td><span class="badge">Iniciante</span></td><td>3 técnicas básicas</td></tr>
+      <tr><td>21–50</td><td><span class="badge">Intermédio</span></td><td>+4 técnicas, combos básicos</td></tr>
+      <tr><td>51–75</td><td><span class="badge gold">Avançado</span></td><td>+5 técnicas, movimentos de posição</td></tr>
+      <tr><td>76–99</td><td><span class="badge red">Mestre</span></td><td>Técnica Signature única por arte</td></tr>
+      <tr><td>100</td><td><span class="badge" style="background:#000;color:var(--gold)">Lendário</span></td><td>Finisher cinematográfico exclusivo</td></tr>
+    </table>
+  </div>
+
+  <div id="tab-lutadores" class="tab-content" style="background: var(--paper);">
+    <div class="section-title">Encontros <span class="accent">Aleatórios</span> e Rivais</div>
+    <p>Tal como no Pokémon, existem lutadores no mundo que o jogador pode defiar ou ser desafiado. Dividem-se em arquétipos:</p>
+
+    <table class="table-style">
+      <tr><th>Arquétipo</th><th>Estilo típico</th><th>Comportamento</th></tr>
+      <tr><td>O Especialista Puro</td><td>Uma só arte, rating 90+</td><td>Domina no seu posicionamento, fraco nos outros</td></tr>
+      <tr><td>O Striker</td><td>Boxe + Muay Thai</td><td>Tenta manter tudo em pé, foge do chão</td></tr>
+      <tr><td>O Grappler</td><td>Wrestling + BJJ</td><td>Tenta takedowns constantes</td></tr>
+      <tr><td>O Híbrido</td><td>2–3 artes</td><td>Versátil mas sem técnica signature</td></tr>
+      <tr><td>O Campeão Regional</td><td>MMA básico</td><td>Mini-boss de cada região do país</td></tr>
+    </table>
+
+    <div class="section-title" style="margin-top:1.5rem;">Os <span class="accent">8 Finalistas</span> do Fight Nacional</div>
+    <p>O campeonato final é um bracket de eliminação. O jogador enfrenta 3 lutas para chegar à final. Cada adversário representa uma filosofia de combate.</p>
+
+    <table class="table-style">
+      <tr><th>#</th><th>Nome</th><th>Estilo</th><th>Fraqueza</th></tr>
+      <tr><td>1</td><td>Diogo "Iron" Campos</td><td>Boxe puro, striker clássico</td><td>Takedowns e chão</td></tr>
+      <tr><td>2</td><td>Rafa Soares</td><td>BJJ world-class</td><td>Distância e striking</td></tr>
+      <tr><td>3</td><td>Miguel "Tigre" Nunes</td><td>Muay Thai + Clinch</td><td>Leg locks e wrestling</td></tr>
+      <tr><td>4</td><td>Leonor Tavares</td><td>Capoeira + Taekwondo</td><td>Grappling direto</td></tr>
+      <tr><td>5</td><td>Chen Wei (naturalizado)</td><td>Kung Fu adaptado para MMA</td><td>Exposição no clinch</td></tr>
+      <tr><td>6</td><td>João "Samurai" Fonseca</td><td>Karate + Judo</td><td>Falta de ground game</td></tr>
+      <tr><td>7</td><td>Artur Pinto</td><td>Wrestling + Sambo</td><td>Fraco no striking à distância</td></tr>
+      <tr><td>8</td><td><strong>Viktor Sousa</strong> <span class="badge red">Final</span></td><td>Sambo + BJJ + Boxe</td><td>O ego. Nada técnico.</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="detail-overlay" id="art-overlay">
+  <div class="detail-box">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div class="detail-art-name" id="d-name"></div>
+    <div class="art-origin" id="d-origin"></div>
+    <p id="d-desc" style="font-size:0.95rem; margin: 0.75rem 0;"></p>
+    <div id="d-bars"></div>
+    <div id="d-gym" style="margin-top:0.75rem; font-size:0.9rem; color:var(--muted);"></div>
+  </div>
+</div>
+
+<script>
+const ARTS = [
+  { id:'bjj', name:'Brazilian Jiu-Jitsu', origin:'Brasil / Japão', desc:'Arte do chão por excelência. Submissions, posições de controlo e ground-and-pound defensivo. Fraco em pé.', stats:{Strike:15,Grapple:98,Clinch:60,Ground:99}, gym:'Ginásio #1 — Faro', color:'#003087' },
+  { id:'muaythai', name:'Muay Thai', origin:'Tailândia', desc:'O boxe de 8 armas. Cotovelos, joelhos, clinch mortífero. O melhor striking para MMA, base de quase todos os campeões.', stats:{Strike:95,Grapple:30,Clinch:90,Ground:20}, gym:'Ginásio #2 — Évora', color:'#DC143C' },
+  { id:'boxe', name:'Boxe', origin:'Inglaterra / EUA', desc:'Punhos técnicos, footwork e defesa de cabeça. O melhor striking à distância. Base de velocidade e timing.', stats:{Strike:92,Grapple:10,Clinch:55,Ground:15}, gym:'Ginásio #3 — Setúbal', color:'#8B0000' },
+  { id:'wrestling', name:'Wrestling', origin:'EUA / Grécia Antiga', desc:'Controlo e transições no chão. Quem controla o wrestling controla onde a luta acontece. Indispensável no MMA moderno.', stats:{Strike:25,Grapple:92,Clinch:80,Ground:85}, gym:'Ginásio #4 — Lisboa', color:'#B8860B' },
+  { id:'judo', name:'Judo', origin:'Japão', desc:'Arremessos devastadores e transições para o chão. Uma única queda bem executada pode acabar com tudo.', stats:{Strike:20,Grapple:88,Clinch:85,Ground:60}, gym:'Ginásio #5 — Braga', color:'#0A0A0A' },
+  { id:'karate', name:'Karate', origin:'Japão / Okinawa', desc:'Golpes precisos e rápidos, kata como framework mental. Adaptado para MMA com foco em distância e contra-ataque.', stats:{Strike:80,Grapple:20,Clinch:35,Ground:25}, gym:'Ginásio #6 — Porto', color:'#FF6600' },
+  { id:'capoeira', name:'Capoeira', origin:'Brasil (Angola)', desc:'Arte única de esquivas e kicks acrobáticos. Imprevisível e desorientadora para adversários. Fraca no grappling direto.', stats:{Strike:70,Grapple:15,Clinch:30,Ground:20}, gym:'Ginásio #7 — Coimbra', color:'#009C3B' },
+  { id:'kungfu', name:'Kung Fu / Wushu', origin:'China', desc:'Variedade de sistemas. Focado em Wing Chun e San Shou para MMA. Velocidade de mãos e mobilidade.', stats:{Strike:75,Grapple:30,Clinch:45,Ground:30}, gym:'Ginásio #8 — Viseu', color:'#CC0000' },
+  { id:'taekwondo', name:'Taekwondo', origin:'Coreia do Sul', desc:'Kicks longos e altos, velocidade e agilidade. Devastador à distância mas vulnerável no clinch e no chão.', stats:{Strike:85,Grapple:10,Clinch:20,Ground:15}, gym:'Ginásio #9 — Aveiro', color:'#003087' },
+  { id:'sambo', name:'Sambo', origin:'Rússia / URSS', desc:'Fusão de Judo com wrestling russo. Excelente em transições e leg locks. Arte favorita dos lutadores do Leste.', stats:{Strike:35,Grapple:90,Clinch:75,Ground:88}, gym:'Ginásio #10 — Guimarães', color:'#4B0082' },
+];
+
+const GYMS = [
+  { num:'01', city:'Faro', art:'Brazilian Jiu-Jitsu', master:'Mestre Carlão Santos', lore:'Ex-faixa preta da Gracie, radicado no Algarve. Ginásio na marina.' },
+  { num:'02', city:'Évora', art:'Muay Thai', master:'Kru Sofia Mendes', lore:'Primeira mulher a obter Kru em Portugal. Ginásio no centro histórico.' },
+  { num:'03', city:'Setúbal', art:'Boxe', master:'Coach Mário "Tornado" Lopes', lore:'Ex-profissional europeu, 38 vitórias. Ginásio no porto industrial.' },
+  { num:'04', city:'Lisboa', art:'Wrestling', master:'Brad Eriksson', lore:'Americano casado com portuguesa. Coach olímpico reformado. Ginásio no Parque das Nações.' },
+  { num:'05', city:'Braga', art:'Judo', master:'Sensei Fernão Azevedo', lore:'O primeiro mentor do protagonista. Guarda os segredos do passado.' },
+  { num:'06', city:'Porto', art:'Karate (Kyokushin)', master:'Sensei Kenji Mota', lore:'Descendente de emigrante japonês. Mais duro ginásio do país.' },
+  { num:'07', city:'Coimbra', art:'Capoeira', master:'Mestre Jinga', lore:'Estudante de Direito que nunca terminou o curso. Vive na arte.' },
+  { num:'08', city:'Viseu', art:'Kung Fu / San Shou', master:'Sifu Chen Wei', lore:'Naturalizado português. Fusão de Wushu tradicional com MMA moderno.' },
+  { num:'09', city:'Aveiro', art:'Taekwondo', master:'Mestre Park Ji-hoon', lore:'Campeão europeu de TKD olímpico. Ginásio junto à Ria de Aveiro.' },
+  { num:'10', city:'Guimarães', art:'Sambo / Combat Sambo', master:'Mestre Artur Volkov', lore:'Russo radicado no Minho. Discreto e perigoso. Conhece o Cartel.' },
+];
+
+function renderArts() {
+  const grid = document.getElementById('arts-grid');
+  grid.innerHTML = ARTS.map(a => `
+    <div class="art-card ${a.id}" onclick="openDetail('${a.id}')">
+      <div class="art-name">${a.name}</div>
+      <div class="art-origin">${a.origin}</div>
+      <div class="art-desc">${a.desc.substring(0,80)}...</div>
+      <div class="art-stat-row">
+        ${a.stats.Strike > 60 ? '<span class="art-stat stat-strike">Striking</span>' : ''}
+        ${a.stats.Grapple > 60 ? '<span class="art-stat stat-grapple">Grappling</span>' : ''}
+        ${a.stats.Clinch > 70 ? '<span class="art-stat stat-clinch">Clinch</span>' : ''}
+        ${a.stats.Ground > 70 ? '<span class="art-stat stat-ground">Ground</span>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderGyms() {
+  const list = document.getElementById('gym-list');
+  list.innerHTML = GYMS.map(g => `
+    <div class="gym-card">
+      <div class="gym-num">${g.num}</div>
+      <div>
+        <div class="gym-city">${g.city}</div>
+        <div class="gym-art">${g.art}</div>
+        <div class="gym-master">${g.master}</div>
+        <div style="font-size:0.82rem; color:var(--muted); margin-top:0.2rem; font-style:italic;">${g.lore}</div>
+      </div>
+      <div class="gym-badge">${g.num === '10' ? 'LAST' : g.num === '05' ? 'KEY' : 'GYM'}</div>
+    </div>
+  `).join('');
+}
+
+function openDetail(id) {
+  const a = ARTS.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('d-name').textContent = a.name;
+  document.getElementById('d-origin').textContent = a.origin;
+  document.getElementById('d-desc').textContent = a.desc;
+  document.getElementById('d-gym').innerHTML = '<strong>Ginásio:</strong> ' + a.gym;
+  const bars = ['Strike','Grapple','Clinch','Ground'];
+  const colors = { Strike:'#9B2335', Grapple:'#003087', Clinch:'#B8600A', Ground:'#2D6A2D' };
+  document.getElementById('d-bars').innerHTML = bars.map(b => `
+    <div class="detail-bar-row">
+      <div class="detail-bar-label">${b}</div>
+      <div class="detail-bar-bg"><div class="detail-bar-fill" style="width:${a.stats[b]}%; background:${colors[b]}"></div></div>
+      <div style="font-family:JetBrains Mono,monospace;font-size:11px;width:28px;text-align:right;color:var(--muted)">${a.stats[b]}</div>
+    </div>
+  `).join('');
+  document.getElementById('art-overlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('art-overlay').classList.remove('open');
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+document.getElementById('art-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDetail();
+});
+
+renderArts();
+renderGyms();
+</script>
