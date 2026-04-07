@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fighter's Path — Lisboa</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0;image-rendering:pixelated;}
+
+:root{
+  --gb0:#0f380f;
+  --gb1:#306230;
+  --gb2:#8bac0f;
+  --gb3:#9bbc0f;
+  --gb4:#e0f0b0;
+  --gb5:#f5ffe8;
+  --gbd:#0a280a;
+  --gbr:#b03000;
+  --gbg:#c88000;
+  --gbb:#1c4888;
+}
+
+html,body{
+  width:100%;height:100%;
+  background:#111;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  font-family:'Press Start 2P',monospace;
+  overflow:hidden;
+}
+
+#wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+
+#topBar{
+  width:480px;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:7px;color:var(--gb2);
+  text-shadow:1px 1px 0 var(--gbd);
+}
+
+#screen{
+  width:480px;height:432px;
+  background:var(--gb0);
+  border:6px solid #333;
+  outline:3px solid #555;
+  position:relative;overflow:hidden;
+}
+
+/* ======= MAP LAYER ======= */
+#mapLayer{
+  position:absolute;inset:0;
+  image-rendering:pixelated;
+}
+
+/* ======= PLAYER ======= */
+#player{
+  position:absolute;
+  width:16px;height:16px;
+  z-index:10;
+  image-rendering:pixelated;
+  transition:left 0.08s linear, top 0.08s linear;
+}
+
+/* ======= NPC ======= */
+.npc{
+  position:absolute;
+  width:16px;height:16px;
+  z-index:9;
+  cursor:pointer;
+  image-rendering:pixelated;
+}
+
+/* ======= DIALOGUE BOX ======= */
+#dialogBox{
+  display:none;
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:96px;
+  background:var(--gb0);
+  border-top:4px solid var(--gb1);
+  padding:8px 10px 6px;
+  z-index:30;
+}
+
+#dialogName{
+  font-size:6px;color:var(--gb3);
+  margin-bottom:5px;
+}
+
+#dialogText{
+  font-size:7px;color:var(--gb4);
+  line-height:1.9;
+}
+
+#dialogPrompt{
+  position:absolute;
+  bottom:8px;right:10px;
+  font-size:6px;color:var(--gb2);
+  animation:blink 0.9s step-end infinite;
+}
+@keyframes blink{50%{opacity:0;}}
+
+/* ======= HUD ======= */
+#hud{
+  position:absolute;
+  top:4px;left:4px;
+  font-size:6px;color:var(--gb4);
+  background:rgba(15,56,15,0.85);
+  border:1px solid var(--gb1);
+  padding:4px 7px;
+  z-index:20;
+  line-height:2;
+}
+
+/* ======= TRANSITION ======= */
+#fadeOverlay{
+  position:absolute;inset:0;
+  background:#000;opacity:0;
+  pointer-events:none;z-index:50;
+  transition:opacity 0.35s;
+}
+
+/* ======= LOCATION TAG ======= */
+#locTag{
+  position:absolute;
+  bottom:106px;left:50%;transform:translateX(-50%);
+  font-size:6px;color:var(--gb4);
+  background:var(--gb0);
+  border:1px solid var(--gb1);
+  padding:3px 8px;
+  z-index:25;
+  white-space:nowrap;
+  opacity:0;transition:opacity 0.4s;
+}
+
+/* ======= BATTLE SCREEN ======= */
+#battleScreen{
+  display:none;
+  position:absolute;inset:0;
+  background:var(--gb0);
+  flex-direction:column;
+  z-index:100;
+}
+
+#battleField{
+  width:100%;height:192px;
+  background:var(--gb0);
+  position:relative;overflow:hidden;flex-shrink:0;
+}
+
+#battleField::after{
+  content:'';position:absolute;
+  bottom:32px;left:0;right:0;height:2px;
+  background:var(--gb1);
+  box-shadow:0 4px 0 var(--gbd),0 -4px 0 var(--gbd);
+}
+
+#flashOverlay{
+  position:absolute;inset:0;
+  background:var(--gb3);opacity:0;
+  pointer-events:none;z-index:20;
+  transition:opacity 0.1s;
+}
+
+.statBox{
+  position:absolute;
+  background:var(--gb0);
+  border:2px solid var(--gb2);
+  padding:4px 6px;font-size:5px;color:var(--gb4);line-height:2;
+}
+#pStats{bottom:8px;left:6px;min-width:145px;}
+#eStats{top:8px;right:6px;min-width:145px;}
+.sName{font-size:6px;color:var(--gb3);margin-bottom:3px;}
+.bRow{display:flex;align-items:center;gap:4px;margin:2px 0;}
+.bLbl{font-size:5px;color:var(--gb2);width:14px;}
+.bTrack{width:80px;height:6px;background:var(--gbd);border:1px solid var(--gb1);overflow:hidden;}
+.bFill{height:100%;transition:width 0.35s;}
+.bFill.hp{background:var(--gb2);}
+.bFill.hp.low{background:var(--gbr);}
+.bFill.st{background:var(--gbg);}
+.bNum{font-size:5px;color:var(--gb4);min-width:30px;}
+
+#posBanner{
+  position:absolute;top:4px;left:50%;transform:translateX(-50%);
+  background:var(--gb1);border:2px solid var(--gb2);
+  padding:3px 8px;font-size:6px;color:var(--gb4);
+  white-space:nowrap;z-index:10;
+}
+
+#turnTag{position:absolute;top:4px;left:4px;font-size:5px;color:var(--gbg);background:var(--gbd);padding:2px 5px;border:1px solid var(--gb1);}
+#roundTag{position:absolute;top:4px;right:4px;font-size:5px;color:var(--gb2);background:var(--gbd);padding:2px 5px;border:1px solid var(--gb1);}
+
+#lowerUI{flex:1;background:var(--gb0);border-top:4px solid var(--gb1);display:flex;flex-direction:column;}
+
+#msgBox{padding:8px 10px;min-height:60px;border-bottom:2px solid var(--gb1);font-size:7px;color:var(--gb4);line-height:1.8;position:relative;}
+#msgCursor{display:inline-block;width:6px;height:6px;background:var(--gb2);animation:blink 0.8s step-end infinite;vertical-align:middle;margin-left:2px;}
+
+#menuArea{flex:1;display:flex;align-items:stretch;}
+
+#mainMenu{display:grid;grid-template-columns:1fr 1fr;gap:0;width:100%;}
+.mBtn{background:var(--gb0);border:1px solid var(--gb1);color:var(--gb4);font-family:'Press Start 2P',monospace;font-size:7px;padding:10px 6px;cursor:pointer;text-align:center;position:relative;}
+.mBtn:hover,.mBtn.sel{background:var(--gb1);color:var(--gb3);}
+.mBtn::before{content:'▶';position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:6px;color:var(--gb2);opacity:0;}
+.mBtn:hover::before,.mBtn.sel::before{opacity:1;}
+
+#techMenu{display:none;flex-direction:column;width:100%;overflow-y:auto;}
+.tBtn{background:var(--gb0);border-bottom:1px solid var(--gb1);color:var(--gb4);font-family:'Press Start 2P',monospace;font-size:6px;padding:7px 8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:4px;}
+.tBtn:hover{background:var(--gb1);color:var(--gb3);}
+.tBtn.off{opacity:0.35;cursor:not-allowed;pointer-events:none;}
+.tArt{font-size:5px;padding:1px 4px;background:var(--gb1);color:var(--gb3);}
+.tCost{color:var(--gbg);font-size:5px;}
+.tDmg{color:var(--gbr);font-size:5px;}
+
+#posMenu{display:none;flex-direction:column;width:100%;}
+.pBtn{background:var(--gb0);border-bottom:1px solid var(--gb1);color:var(--gb4);font-family:'Press Start 2P',monospace;font-size:6px;padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;}
+.pBtn:hover,.pBtn.cur{background:var(--gb1);color:var(--gb3);}
+.pBtn.cur{border-left:3px solid var(--gb2);}
+
+#backBtn{background:var(--gbd);border:none;border-top:1px solid var(--gb1);color:var(--gb2);font-family:'Press Start 2P',monospace;font-size:6px;padding:6px;cursor:pointer;text-align:center;width:100%;}
+#backBtn:hover{background:var(--gb1);}
+
+#endScreen{display:none;position:absolute;inset:0;background:var(--gb0);align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:200;}
+#endTitle{font-size:14px;color:var(--gb3);text-shadow:3px 3px 0 var(--gbd);animation:pulse 1s ease infinite alternate;}
+@keyframes pulse{from{color:var(--gb3);}to{color:var(--gbg);}}
+#endSub{font-size:7px;color:var(--gb2);}
+#endBtns{display:flex;gap:10px;margin-top:4px;}
+.endBtn{background:var(--gb1);border:2px solid var(--gb2);color:var(--gb4);font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 12px;cursor:pointer;}
+.endBtn:hover{background:var(--gb2);color:var(--gb0);}
+
+.shake{animation:shk 0.3s ease;}
+@keyframes shk{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.shakeE{animation:shkE 0.3s ease;}
+@keyframes shkE{0%,100%{transform:scaleX(-1) translateX(0);}20%{transform:scaleX(-1) translateX(-6px);}40%{transform:scaleX(-1) translateX(6px);}60%{transform:scaleX(-1) translateX(-4px);}80%{transform:scaleX(-1) translateX(4px);}}
+
+#statusBar{width:480px;display:flex;justify-content:space-between;font-size:6px;color:var(--gb1);}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="topBar">
+    <span>FIGHTER'S PATH</span>
+    <span id="areaName">LISBOA — MOURARIA</span>
+    <span>ALPHA v0.1</span>
+  </div>
+
+  <div id="screen">
+
+    <!-- MAP -->
+    <canvas id="mapLayer" width="480" height="432"></canvas>
+    <canvas id="player"   width="16"  height="16"  style="position:absolute;z-index:10;left:224px;top:200px;"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      HP <span id="hudHp">100</span> / 100<br>
+      ST <span id="hudSt">80</span> / 80
+    </div>
+
+    <!-- Location tag -->
+    <div id="locTag"></div>
+
+    <!-- Dialogue -->
+    <div id="dialogBox">
+      <div id="dialogName"></div>
+      <div id="dialogText"></div>
+      <div id="dialogPrompt">▼ Z</div>
+    </div>
+
+    <!-- Fade overlay -->
+    <div id="fadeOverlay"></div>
+
+    <!-- BATTLE SCREEN -->
+    <div id="battleScreen">
+      <div id="battleField">
+        <div id="flashOverlay"></div>
+        <div id="turnTag">SEU TURNO</div>
+        <div id="roundTag">ROUND 1</div>
+        <div id="posBanner">EM PÉ</div>
+        <canvas id="pSprite" width="48" height="64" style="position:absolute;bottom:34px;left:40px;"></canvas>
+        <canvas id="eSprite" width="48" height="64" style="position:absolute;bottom:34px;right:40px;transform:scaleX(-1);"></canvas>
+        <div class="statBox" id="pStats">
+          <div class="sName" id="pName">RUI SANTOS</div>
+          <div class="bRow"><div class="bLbl">HP</div><div class="bTrack"><div class="bFill hp" id="pHpBar" style="width:100%"></div></div><div class="bNum" id="pHpN">100/100</div></div>
+          <div class="bRow"><div class="bLbl">ST</div><div class="bTrack"><div class="bFill st" id="pStBar" style="width:100%"></div></div><div class="bNum" id="pStN">80/80</div></div>
+        </div>
+        <div class="statBox" id="eStats">
+          <div class="sName" id="eName">SEAMUS O'BRIEN</div>
+          <div class="bRow"><div class="bLbl">HP</div><div class="bTrack"><div class="bFill hp" id="eHpBar" style="width:100%"></div></div><div class="bNum" id="eHpN">120/120</div></div>
+          <div class="bRow"><div class="bLbl">ST</div><div class="bTrack"><div class="bFill st" id="eStBar" style="width:100%"></div></div><div class="bNum" id="eStN">90/90</div></div>
+        </div>
+      </div>
+      <div id="lowerUI">
+        <div id="msgBox"><span id="msgText"></span><span id="msgCursor"></span></div>
+        <div id="menuArea">
+          <div id="mainMenu">
+            <button class="mBtn" onclick="showTech()">⚔ TÉCNICAS</button>
+            <button class="mBtn" onclick="showPos()">🔄 POSIÇÃO</button>
+            <button class="mBtn" onclick="doRest()">💤 DESCANSAR</button>
+            <button class="mBtn" onclick="doFlee()">🏃 FUGIR</button>
+          </div>
+          <div id="techMenu"></div>
+          <div id="posMenu"></div>
+        </div>
+      </div>
+      <div id="endScreen">
+        <div id="endTitle">VITÓRIA!</div>
+        <div id="endSub" id="endSub"></div>
+        <div id="endBtns">
+          <button class="endBtn" onclick="returnToMap()">◀ VOLTAR AO MAPA</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="statusBar">
+    <span>WASD / ↑↓←→ MOVER</span>
+    <span>Z INTERAGIR</span>
+    <span>ENTER CONFIRMAR</span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// TILE ENGINE
+// ============================================================
+const TILE = 16;
+const COLS = 30, ROWS = 27; // map size in tiles (480x432)
+
+// Tile IDs
+const T = {
+  GRASS:0, ROAD:1, SIDEWALK:2, BUILDING:3,
+  WALL:4, DOOR:5, WATER:6, TREE:7,
+  COBBLE:8, TRAM:9, FENCE:10, SIGN:11,
+  GYM:12, AZULEJO:13, RUIN:14, BRIDGE:15
+};
+
+// Colors for each tile type
+const TCOLORS = {
+  [T.GRASS]:    ['#3a6b1a','#4a7c22'],
+  [T.ROAD]:     ['#5a5248','#4e4840'],
+  [T.SIDEWALK]: ['#c8bfa8','#b8af98'],
+  [T.BUILDING]: ['#7a6040','#6a5030'],
+  [T.WALL]:     ['#4a3820','#3a2810'],
+  [T.DOOR]:     ['#8b4513','#6b2503'],
+  [T.WATER]:    ['#1c5888','#1a4878'],
+  [T.TREE]:     ['#2d6b1a','#1d5b0a'],
+  [T.COBBLE]:   ['#9a8868','#8a7858'],
+  [T.TRAM]:     ['#c8a800','#b89800'],
+  [T.FENCE]:    ['#6a5a3a','#5a4a2a'],
+  [T.SIGN]:     ['#c8c8a0','#a8a880'],
+  [T.GYM]:      ['#8b0000','#6b0000'],
+  [T.AZULEJO]:  ['#4488cc','#3370aa'],
+  [T.RUIN]:     ['#887060','#786050'],
+  [T.BRIDGE]:   ['#888070','#787060'],
+};
+
+// Lisboa Mouraria map (30x27)
+// Readable key: spaces=road, B=building, G=gym, T=tree, W=water
+const RAW_MAP = [
+//0         1         2         3
+//0123456789012345678901234567890
+ "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", // 0
+ "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", // 1
+ "BB  SSSSSSSSSSSSSSSS  BBBBBBBB", // 2 — top road
+ "BB  SSSSSSSSSSSSSSSS  BBBBBBBB", // 3
+ "  RR                RR        ", // 4 — crossroad
+ "  RR                RR        ", // 5
+ "BBRR AAAAAAA BBBBB RRBBBBBBBBB", // 6
+ "BBRR AAAAAAA BBBBB RRBBBBBBBBB", // 7
+ "BBRR AAAAAAA BBBBB RRBBBBBBBBB", // 8
+ "BBRR         DDDDD RRBBBBBBBBB", // 9 — doors
+ "  RR TTTTTTT TTTTT RR         ", // 10
+ "  RR TTTTTTT TTTTT RR         ", // 11
+ "BBRR BBBBBBB BBBBB RRGGGGGGGBB", // 12 — gym row
+ "BBRR BBBBBBB BBBBB RRGGGGGGGBB", // 13
+ "BBRR BBBBBBB BBBBB RRGGGGGGGBB", // 14
+ "BB   CCCCCCC CCCCC   BBBBBBBBB", // 15 — cobblestone plaza
+ "BB   CCCCCCC CCCCC   BBBBBBBBB", // 16
+ "BB   CCCCCCC CCCCC   BBBBBBBBB", // 17
+ "  RR                RR         ", // 18
+ "  RR                RR         ", // 19
+ "BBRRBBBBBBBBBBBBBBBBRRBBBBBBBBB", // 20
+ "BBRRBBBBBBBBBBBBBBBBRRBBBBBBBBB", // 21
+ "BBRR    ZZZZZZZZZ   RRBBBBBBBBB", // 22 — tejo water
+ "BBRR    ZZZZZZZZZ   RRBBBBBBBBB", // 23
+ "BBRR    ZZZZZZZZZ   RRBBBBBBBBB", // 24
+ "BB                   BBBBBBBBB", // 25
+ "BB                   BBBBBBBBB", // 26
+];
+
+// Map char to tile
+function charToTile(c) {
+  switch(c) {
+    case 'B': return T.BUILDING;
+    case 'R': return T.ROAD;
+    case 'S': return T.SIDEWALK;
+    case 'A': return T.AZULEJO;
+    case 'D': return T.DOOR;
+    case 'T': return T.TREE;
+    case 'C': return T.COBBLE;
+    case 'G': return T.GYM;
+    case 'Z': return T.WATER;
+    case 'F': return T.FENCE;
+    default:  return T.ROAD;
+  }
+}
+
+// Build tile array
+const MAP = [];
+for (let r = 0; r < ROWS; r++) {
+  MAP[r] = [];
+  const row = RAW_MAP[r] || '';
+  for (let c = 0; c < COLS; c++) {
+    MAP[r][c] = charToTile(row[c] || ' ');
+  }
+}
+
+// Walkable tiles
+const WALKABLE = new Set([T.ROAD, T.SIDEWALK, T.COBBLE, T.DOOR, T.TRAM]);
+
+// ============================================================
+// DRAW MAP
+// ============================================================
+const mapCanvas = document.getElementById('mapLayer');
+const mctx = mapCanvas.getContext('2d');
+mctx.imageSmoothingEnabled = false;
+
+function drawTile(ctx, tx, ty, tileId, checker) {
+  const x = tx * TILE, y = ty * TILE;
+  const cols = TCOLORS[tileId] || ['#444','#333'];
+  ctx.fillStyle = (checker % 2 === 0) ? cols[0] : cols[1];
+  ctx.fillRect(x, y, TILE, TILE);
+
+  // Tile decorations
+  if (tileId === T.TREE) {
+    ctx.fillStyle = '#1a4a08';
+    ctx.fillRect(x+3, y+2, 10, 9);
+    ctx.fillStyle = '#0a3002';
+    ctx.fillRect(x+6, y+11, 4, 4);
+  }
+  if (tileId === T.BUILDING) {
+    // Window
+    if (tx % 3 === 1 && ty % 3 === 1) {
+      ctx.fillStyle = '#c8a840';
+      ctx.fillRect(x+4, y+3, 4, 5);
+      ctx.fillRect(x+10, y+3, 4, 5);
+    }
+  }
+  if (tileId === T.GYM) {
+    // Red glow on gym
+    ctx.fillStyle = '#cc2200';
+    ctx.fillRect(x+2, y+2, 12, 3);
+    ctx.fillStyle = '#ff6644';
+    ctx.fillRect(x+4, y+3, 8, 1);
+  }
+  if (tileId === T.AZULEJO) {
+    // Blue tile pattern
+    ctx.fillStyle = '#2255aa';
+    ctx.fillRect(x+1, y+1, 6, 6);
+    ctx.fillRect(x+9, y+1, 6, 6);
+    ctx.fillRect(x+1, y+9, 6, 6);
+    ctx.fillRect(x+9, y+9, 6, 6);
+  }
+  if (tileId === T.WATER) {
+    ctx.fillStyle = 'rgba(80,160,220,0.3)';
+    ctx.fillRect(x, y, TILE, 2);
+    if ((tx + ty) % 4 === 0) {
+      ctx.fillStyle = '#5ab0e8';
+      ctx.fillRect(x+2, y+6, 12, 2);
+    }
+  }
+  if (tileId === T.COBBLE) {
+    ctx.strokeStyle = '#6a5838';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(x+1, y+1, 7, 7);
+    ctx.strokeRect(x+9, y+9, 6, 6);
+  }
+  if (tileId === T.DOOR) {
+    ctx.fillStyle = '#c87030';
+    ctx.fillRect(x+4, y+4, 8, 11);
+    ctx.fillStyle = '#a85020';
+    ctx.fillRect(x+9, y+7, 2, 2);
+  }
+  if (tileId === T.ROAD) {
+    // Road markings occasionally
+    if (tx % 8 === 4 && ty % 4 === 2) {
+      ctx.fillStyle = '#888070';
+      ctx.fillRect(x+6, y+2, 4, 12);
+    }
+  }
+}
+
+function drawMap() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      drawTile(mctx, c, r, MAP[r][c], (r+c));
+    }
+  }
+  // Draw NPC sprites on map
+  NPCS.forEach(n => drawNPC(mctx, n));
+}
+
+// ============================================================
+// NPC DATA
+// ============================================================
+const NPCS = [
+  {
+    id: 'seamus',
+    name: "SEAMUS O'BRIEN",
+    tx: 14, ty: 13,  // tile position
+    color: '#c04020',
+    hairColor: '#c86820',
+    dialogue: [
+      "Oi oi! Outro turista perdido em Mouraria?",
+      "Ou talvez estejas à procura do Gallagher's...",
+      "O meu ginásio de boxe. Ali mesmo.",
+      "Se queres aprender a lutar, tens de me vencer primeiro.",
+      "Float like a butterfly, hit like a Lisbon tram!",
+    ],
+    battleTrigger: true,
+    enemy: {
+      name: "SEAMUS O'BRIEN",
+      hp: 110, maxHp: 110,
+      st: 90,  maxSt: 90,
+      style: 'boxe',
+      palette: { skin:'#d4a060', hair:'#c86820', gi:'#c04020', belt:'#ffffff', dark:'#802010', light:'#ffccaa' },
+      reward: "FAIXA DE BOXE AMADOR",
+    }
+  },
+  {
+    id: 'turista',
+    name: "TURISTA AMERICANO",
+    tx: 8, ty: 16,
+    color: '#4488cc',
+    hairColor: '#886644',
+    dialogue: [
+      "Dude, where is the Alfama?",
+      "I heard there's a fight gym around here...",
+      "Back home I do some wrestling. Wanna try me?",
+    ],
+    battleTrigger: true,
+    enemy: {
+      name: "CHAD (WRESTLING)",
+      hp: 80, maxHp: 80,
+      st: 70, maxSt: 70,
+      style: 'wrestling',
+      palette: { skin:'#f0c890', hair:'#886644', gi:'#4488cc', belt:'#ffff00', dark:'#224488', light:'#aaccff' },
+      reward: "EXP: +40",
+    }
+  },
+  {
+    id: 'capoeira',
+    name: "CAPOEIRISTA",
+    tx: 18, ty: 16,
+    color: '#008800',
+    hairColor: '#1a0a00',
+    dialogue: [
+      "Ei mano! Bora jogar capoeira?",
+      "Aqui na praça treino todos os dias.",
+      "Vamos ver se aguenta os meus movimentos!",
+    ],
+    battleTrigger: true,
+    enemy: {
+      name: "CAPOEIRISTA RAFA",
+      hp: 75, maxHp: 75,
+      st: 85, maxSt: 85,
+      style: 'capoeira',
+      palette: { skin:'#c07840', hair:'#1a0a00', gi:'#008800', belt:'#ffff00', dark:'#004400', light:'#88ff88' },
+      reward: "EXP: +35",
+    }
+  },
+  {
+    id: 'velho',
+    name: "VELHO DO BAIRRO",
+    tx: 4, ty: 16,
+    color: '#888880',
+    hairColor: '#e8e8e8',
+    dialogue: [
+      "Bons dias, jovem.",
+      "Este bairro não é o que era...",
+      "Mas o Gallagher's continua ali. Sempre esteve.",
+      "O Seamus é duro mas é honesto. Vale a pena treinar com ele.",
+    ],
+    battleTrigger: false,
+    reward: null,
+  },
+];
+
+function drawNPC(ctx, npc) {
+  const x = npc.tx * TILE;
+  const y = npc.ty * TILE;
+  // Body
+  ctx.fillStyle = npc.color;
+  ctx.fillRect(x+3, y+6, 10, 8);
+  // Head
+  ctx.fillStyle = npc.color === '#888880' ? '#d0c0a0' : (npc.id === 'seamus' ? '#d4a060' : npc.id === 'turista' ? '#f0c890' : '#c07840');
+  ctx.fillRect(x+4, y+1, 8, 7);
+  // Hair
+  ctx.fillStyle = npc.hairColor;
+  ctx.fillRect(x+4, y+1, 8, 2);
+  // Legs
+  ctx.fillStyle = npc.color;
+  ctx.fillRect(x+4, y+14, 3, 2);
+  ctx.fillRect(x+9, y+14, 3, 2);
+  // Exclamation if near
+  if (npc._nearPlayer) {
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(x+7, y-6, 2, 5);
+    ctx.fillRect(x+7, y-1, 2, 2);
+  }
+}
+
+// ============================================================
+// PLAYER
+// ============================================================
+const playerCanvas = document.getElementById('player');
+const pctx = playerCanvas.getContext('2d');
+pctx.imageSmoothingEnabled = false;
+
+let player = {
+  tx: 14, ty: 16,  // tile coords
+  px: 0, py: 0,    // pixel offset for smooth movement
+  facing: 'down',
+  animFrame: 0,
+  hp: 100, maxHp: 100,
+  st: 80,  maxSt: 80,
+  defeatedNPCs: new Set(),
+};
+
+function drawPlayer(frame) {
+  pctx.clearRect(0, 0, 16, 16);
+  const f = frame % 2;
+
+  // Shadow
+  pctx.fillStyle = 'rgba(0,0,0,0.3)';
+  pctx.fillRect(2, 13, 12, 3);
+
+  // Legs (animated)
+  pctx.fillStyle = '#3060b0';
+  if (f === 0) {
+    pctx.fillRect(4, 11, 3, 4);
+    pctx.fillRect(9, 11, 3, 4);
+  } else {
+    pctx.fillRect(3, 11, 3, 4);
+    pctx.fillRect(10, 11, 3, 4);
+  }
+
+  // Body (gi)
+  pctx.fillStyle = '#e8e4d0';
+  pctx.fillRect(3, 6, 10, 6);
+
+  // Belt
+  pctx.fillStyle = '#f0f000';
+  pctx.fillRect(3, 10, 10, 2);
+
+  // Arms
+  pctx.fillStyle = '#e8e4d0';
+  pctx.fillRect(1, 7, 2, 4);
+  pctx.fillRect(13, 7, 2, 4);
+
+  // Head
+  pctx.fillStyle = '#f0c890';
+  pctx.fillRect(4, 1, 8, 6);
+
+  // Hair
+  pctx.fillStyle = '#1a0800';
+  pctx.fillRect(4, 1, 8, 2);
+  if (player.facing === 'up') pctx.fillRect(4, 1, 8, 4);
+
+  // Eyes (only when facing down/side)
+  if (player.facing !== 'up') {
+    pctx.fillStyle = '#1a0800';
+    pctx.fillRect(5, 4, 2, 2);
+    pctx.fillRect(9, 4, 2, 2);
+  }
+}
+
+// ============================================================
+// AREAS / ZONES
+// ============================================================
+const ZONES = [
+  { x1:0, y1:0, x2:29, y2:5,   name:'MOURARIA — NORTE' },
+  { x1:0, y1:6, x2:29, y2:11,  name:'PRAÇA DO INTENDENTE' },
+  { x1:0, y1:12, x2:29, y2:17, name:'MOURARIA — CENTRO' },
+  { x1:12, y1:12, x2:20, y2:15,name:"GALLAGHER'S BOXING CLUB" },
+  { x1:0, y1:18, x2:29, y2:21, name:'MARTIM MONIZ' },
+  { x1:0, y1:22, x2:29, y2:26, name:'RIO TEJO — MARGEM' },
+];
+
+let lastZone = '';
+function checkZone() {
+  for (const z of ZONES) {
+    if (player.tx >= z.x1 && player.tx <= z.x2 && player.ty >= z.y1 && player.ty <= z.y2) {
+      if (z.name !== lastZone) {
+        lastZone = z.name;
+        document.getElementById('areaName').textContent = 'LISBOA — ' + z.name;
+        showLocTag(z.name);
+      }
+      return;
+    }
+  }
+}
+
+function showLocTag(name) {
+  const el = document.getElementById('locTag');
+  el.textContent = '📍 ' + name;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.opacity = '0', 2500);
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+const keys = {};
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  // Interact
+  if ((e.key === 'z' || e.key === 'Z' || e.key === 'Enter') && !gameState.inBattle) {
+    tryInteract();
+  }
+  // Dialogue advance
+  if ((e.key === 'z' || e.key === 'Z' || e.key === 'Enter') && gameState.inDialogue) {
+    advanceDialogue();
+  }
+  // Battle keys
+  if (gameState.inBattle) {
+    if (e.key === 'x' || e.key === 'X') showMain();
+    if (e.key === '1') showTech();
+    if (e.key === '2') showPos();
+    if (e.key === '3') doRest();
+  }
+});
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+// ============================================================
+// MOVEMENT
+// ============================================================
+let moveTimer = 0;
+const MOVE_DELAY = 160;
+
+function tryMove(dx, dy) {
+  const nx = player.tx + dx;
+  const ny = player.ty + dy;
+  if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
+  if (!WALKABLE.has(MAP[ny][nx])) return;
+  // Check NPC collision
+  for (const n of NPCS) {
+    if (n.tx === nx && n.ty === ny) return;
+  }
+  player.tx = nx;
+  player.ty = ny;
+  player.animFrame++;
+  checkZone();
+  checkNPCProximity();
+}
+
+function checkNPCProximity() {
+  for (const n of NPCS) {
+    const dist = Math.abs(n.tx - player.tx) + Math.abs(n.ty - player.ty);
+    n._nearPlayer = dist <= 2;
+  }
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+const gameState = {
+  inDialogue: false,
+  inBattle: false,
+  currentNPC: null,
+  dialogueStep: 0,
+};
+
+// ============================================================
+// DIALOGUE SYSTEM
+// ============================================================
+function tryInteract() {
+  if (gameState.inDialogue || gameState.inBattle) return;
+
+  // Find adjacent NPC
+  const dirs = [[0,1],[0,-1],[1,0],[-1,0],[0,0]];
+  for (const [dx,dy] of dirs) {
+    const tx = player.tx + dx, ty = player.ty + dy;
+    const npc = NPCS.find(n => n.tx === tx && n.ty === ty);
+    if (npc) {
+      startDialogue(npc);
+      return;
+    }
+  }
+}
+
+function startDialogue(npc) {
+  gameState.inDialogue = true;
+  gameState.currentNPC = npc;
+  gameState.dialogueStep = 0;
+
+  const box = document.getElementById('dialogBox');
+  box.style.display = 'block';
+  document.getElementById('dialogName').textContent = npc.name;
+  showDialogueLine(npc.dialogue[0]);
+}
+
+function showDialogueLine(text) {
+  const el = document.getElementById('dialogText');
+  el.textContent = '';
+  let i = 0;
+  clearInterval(gameState.typeTimer);
+  gameState.typeTimer = setInterval(() => {
+    el.textContent += text[i++];
+    if (i >= text.length) clearInterval(gameState.typeTimer);
+  }, 30);
+}
+
+function advanceDialogue() {
+  clearInterval(gameState.typeTimer);
+  const npc = gameState.currentNPC;
+
+  // If typing not done, just show full line
+  const el = document.getElementById('dialogText');
+  const current = npc.dialogue[gameState.dialogueStep];
+  if (el.textContent.length < current.length) {
+    el.textContent = current;
+    return;
+  }
+
+  gameState.dialogueStep++;
+
+  if (gameState.dialogueStep >= npc.dialogue.length) {
+    // End dialogue
+    document.getElementById('dialogBox').style.display = 'none';
+    gameState.inDialogue = false;
+
+    if (npc.battleTrigger && !player.defeatedNPCs.has(npc.id)) {
+      setTimeout(() => startBattle(npc), 200);
+    }
+  } else {
+    showDialogueLine(npc.dialogue[gameState.dialogueStep]);
+  }
+}
+
+// ============================================================
+// BATTLE SYSTEM
+// ============================================================
+
+// Sprite drawing
+function drawFighter(canvas, pal, state) {
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+  const S = 4;
+  const px = (x,y,c) => { ctx.fillStyle=c; ctx.fillRect(x*S,y*S,S,S); };
+
+  const idle = () => {
+    px(4,0,pal.dark); px(5,0,pal.dark); px(6,0,pal.dark); px(7,0,pal.dark);
+    [3,8].forEach(x=>px(x,1,pal.dark));
+    [4,5,6,7].forEach(x=>px(x,1,pal.hair));
+    [3,8].forEach(x=>{px(x,2,pal.dark);px(x,3,pal.dark);});
+    [4,5,6,7].forEach(x=>{px(x,2,pal.skin);px(x,3,pal.skin);});
+    px(4,4,pal.dark); px(5,4,pal.skin); px(6,4,pal.skin); px(7,4,pal.dark);
+    for(let r=5;r<=8;r++) for(let c=2;c<=9;c++) px(c,r,pal.gi);
+    [5,6,7,8].forEach(r=>{px(1,r,pal.gi);px(10,r,pal.gi);});
+    px(2,8,pal.skin); px(9,8,pal.skin);
+    for(let c=3;c<=8;c++) px(c,9,pal.belt);
+    for(let c=3;c<=8;c++) px(c,10,pal.gi);
+    [3,4,7,8].forEach(c=>{px(c,11,pal.gi);px(c,12,pal.gi);px(c,13,pal.gi);});
+    [3,4,7,8].forEach(c=>{px(c,14,pal.dark);px(c,15,pal.dark);});
+  };
+
+  const attack = () => {
+    idle();
+    // extend arm
+    px(10,5,pal.gi); px(11,5,pal.gi); px(11,4,pal.skin);
+  };
+
+  const hurt = () => {
+    px(5,0,pal.dark); px(6,0,pal.dark); px(7,0,pal.dark); px(8,0,pal.dark);
+    [4,5,6,7].forEach(x=>px(x,1,pal.hair));
+    [4,5,6,7].forEach(x=>{px(x,2,pal.skin);px(x,3,pal.skin);});
+    for(let r=4;r<=8;r++) for(let c=3;c<=9;c++) px(c,r,pal.gi);
+    [1,2].forEach(x=>{px(x,3,pal.gi);px(x,4,pal.gi);});
+    [10,11].forEach(x=>{px(x,3,pal.gi);px(x,4,pal.gi);});
+    for(let c=3;c<=8;c++) px(c,9,pal.belt);
+    for(let c=3;c<=8;c++) px(c,10,pal.gi);
+    [4,5,6,7].forEach(c=>{px(c,11,pal.gi);px(c,12,pal.gi);});
+    [4,5,6,7].forEach(c=>px(c,13,pal.dark));
+  };
+
+  if (state === 'idle' || state === 'ground') idle();
+  else if (state === 'attack') attack();
+  else if (state === 'hurt') hurt();
+}
+
+const PLAYER_PAL = {skin:'#f0c890',hair:'#1a0800',gi:'#e8e4d0',belt:'#f0f000',dark:'#3060b0',light:'#ffffff'};
+
+// Techniques
+const TECHS = [
+  {id:'jab',     name:'JAB',        art:'BOXE',     pos:['EM PÉ','CLINCH'],  dmg:14, cost:8,  fx:null},
+  {id:'cruzado', name:'CRUZADO',    art:'BOXE',     pos:['EM PÉ'],           dmg:22, cost:14, fx:null},
+  {id:'gancho',  name:'GANCHO',     art:'BOXE',     pos:['EM PÉ','CLINCH'],  dmg:20, cost:14, fx:'stun'},
+  {id:'armbar',  name:'ARMBAR',     art:'BJJ',      pos:['CHÃO'],            dmg:28, cost:20, fx:'stun'},
+  {id:'guard',   name:'GUARDA',     art:'BJJ',      pos:['CHÃO','CLINCH'],   dmg:8,  cost:8,  fx:null},
+  {id:'takedown',name:'TAKEDOWN',   art:'WRESTLING',pos:['EM PÉ','CLINCH'],  dmg:12, cost:16, fx:'ground'},
+  {id:'teep',    name:'TEEP',       art:'MUAY THAI',pos:['EM PÉ'],           dmg:16, cost:10, fx:null},
+  {id:'joelho',  name:'JOELHO',     art:'MUAY THAI',pos:['CLINCH'],          dmg:22, cost:14, fx:null},
+];
+
+const ENEMY_TECHS_BY_STYLE = {
+  boxe:     [{name:'JAB',pos:['EM PÉ','CLINCH'],dmg:13,cost:8,fx:null},{name:'CRUZADO',pos:['EM PÉ'],dmg:20,cost:13,fx:null},{name:'GANCHO',pos:['EM PÉ','CLINCH'],dmg:18,cost:12,fx:'stun'}],
+  wrestling:[{name:'TAKEDOWN',pos:['EM PÉ','CLINCH'],dmg:11,cost:14,fx:'ground'},{name:'SUPLEX',pos:['CLINCH'],dmg:28,cost:20,fx:'ground'},{name:'JAB',pos:['EM PÉ'],dmg:10,cost:8,fx:null}],
+  capoeira: [{name:'GINGA KICK',pos:['EM PÉ'],dmg:18,cost:12,fx:null},{name:'AU MORTAL',pos:['EM PÉ'],dmg:22,cost:16,fx:'stun'},{name:'RASTEIRA',pos:['EM PÉ','CLINCH'],dmg:14,cost:10,fx:'ground'}],
+};
+
+const POSITIONS = ['EM PÉ','CLINCH','CHÃO'];
+
+let B = {}; // battle state
+
+function startBattle(npc) {
+  gameState.inBattle = true;
+  const en = npc.enemy;
+
+  B = {
+    round: 1, turn: 'player', pos: 'EM PÉ', busy: false,
+    playerStunned: false, enemyStunned: false,
+    player: { hp: player.hp, maxHp: player.maxHp, st: player.st, maxSt: player.maxSt },
+    enemy:  { ...en },
+    npc: npc,
+    msgs: [], msgBusy: false,
+  };
+
+  const bs = document.getElementById('battleScreen');
+  bs.style.display = 'flex';
+  document.getElementById('endScreen').style.display = 'none';
+
+  // Set enemy name/palette
+  document.getElementById('eName').textContent = en.name;
+  document.getElementById('eHpN').textContent = en.hp + '/' + en.maxHp;
+  document.getElementById('eStN').textContent = en.st + '/' + en.maxSt;
+
+  drawFighter(document.getElementById('pSprite'), PLAYER_PAL, 'idle');
+  drawFighter(document.getElementById('eSprite'), en.palette, 'idle');
+
+  renderBattle();
+  showMain();
+  bMsg(`${en.name} quer lutar! Round 1!`);
+}
+
+function renderBattle() {
+  const p = B.player, e = B.enemy;
+  const pHp = Math.max(0,p.hp/p.maxHp*100);
+  const eHp = Math.max(0,e.hp/e.maxHp*100);
+
+  document.getElementById('pHpBar').style.width = pHp+'%';
+  document.getElementById('pHpBar').className = 'bFill hp'+(pHp<30?' low':'');
+  document.getElementById('eHpBar').style.width = eHp+'%';
+  document.getElementById('eHpBar').className = 'bFill hp'+(eHp<30?' low':'');
+  document.getElementById('pStBar').style.width = Math.max(0,p.st/p.maxSt*100)+'%';
+  document.getElementById('eStBar').style.width = Math.max(0,e.st/e.maxSt*100)+'%';
+
+  document.getElementById('pHpN').textContent = Math.max(0,p.hp)+'/'+p.maxHp;
+  document.getElementById('eHpN').textContent = Math.max(0,e.hp)+'/'+e.maxHp;
+  document.getElementById('pStN').textContent = Math.max(0,p.st)+'/'+p.maxSt;
+  document.getElementById('eStN').textContent = Math.max(0,e.st)+'/'+e.maxSt;
+
+  document.getElementById('posBanner').textContent = 'POSIÇÃO: '+B.pos;
+  document.getElementById('turnTag').textContent = B.turn==='player' ? 'SEU TURNO' : 'ADVERSÁRIO';
+  document.getElementById('turnTag').style.color = B.turn==='player' ? 'var(--gbg)' : 'var(--gbr)';
+  document.getElementById('roundTag').textContent = 'ROUND '+B.round;
+
+  // Update HUD
+  document.getElementById('hudHp').textContent = Math.max(0, B.player.hp);
+  document.getElementById('hudSt').textContent  = Math.max(0, B.player.st);
+}
+
+// Message queue
+function bMsg(text, cb) {
+  B.msgs.push({text,cb});
+  if (!B.msgBusy) processBMsg();
+}
+function processBMsg() {
+  if (!B.msgs.length) { B.msgBusy=false; return; }
+  B.msgBusy = true;
+  const {text,cb} = B.msgs.shift();
+  const el = document.getElementById('msgText');
+  const cur = document.getElementById('msgCursor');
+  cur.style.display='none';
+  el.textContent='';
+  let i=0;
+  const iv = setInterval(()=>{
+    el.textContent += text[i++];
+    if(i>=text.length){ clearInterval(iv); cur.style.display='inline-block'; setTimeout(()=>{ if(cb)cb(); processBMsg(); },750); }
+  },25);
+}
+
+function showMain() {
+  document.getElementById('mainMenu').style.display='grid';
+  document.getElementById('techMenu').style.display='none';
+  document.getElementById('posMenu').style.display='none';
+}
+
+function showTech() {
+  if(B.busy||B.turn!=='player') return;
+  document.getElementById('mainMenu').style.display='none';
+  document.getElementById('posMenu').style.display='none';
+  const tm = document.getElementById('techMenu');
+  tm.style.display='flex'; tm.innerHTML='';
+
+  TECHS.forEach(t=>{
+    const avail = t.pos.includes(B.pos);
+    const afford = B.player.st >= t.cost;
+    const btn = document.createElement('button');
+    btn.className='tBtn'+((!avail||!afford)?' off':'');
+    btn.innerHTML=`<span style="color:var(--gb3)">${t.name}</span><span class="tArt">${t.art}</span><span class="tDmg">DMG:${t.dmg}</span><span class="tCost">ST:${t.cost}</span>`;
+    if(avail&&afford) btn.onclick=()=>playerAttack(t);
+    tm.appendChild(btn);
+  });
+
+  const back=document.createElement('button');
+  back.id='backBtn'; back.textContent='◀ VOLTAR'; back.onclick=showMain;
+  tm.appendChild(back);
+}
+
+function showPos() {
+  if(B.busy||B.turn!=='player') return;
+  document.getElementById('mainMenu').style.display='none';
+  document.getElementById('techMenu').style.display='none';
+  const pm=document.getElementById('posMenu');
+  pm.style.display='flex'; pm.innerHTML='';
+
+  POSITIONS.forEach(pos=>{
+    const btn=document.createElement('button');
+    btn.className='pBtn'+(B.pos===pos?' cur':'');
+    btn.innerHTML=`<span>${pos}</span>`;
+    btn.onclick=()=>{
+      if(B.pos===pos){showMain();return;}
+      B.busy=true; showMain();
+      B.player.st-=10; B.pos=pos; renderBattle();
+      bMsg(`Mudaste para ${pos}! (-10 ST)`,()=>{
+        B.turn='enemy'; B.busy=false; renderBattle();
+        setTimeout(enemyTurn,800);
+      });
+    };
+    pm.appendChild(btn);
+  });
+
+  const back=document.createElement('button');
+  back.id='backBtn'; back.textContent='◀ VOLTAR'; back.onclick=showMain;
+  pm.appendChild(back);
+}
+
+function playerAttack(tech) {
+  if(B.busy||B.turn!=='player') return;
+  B.busy=true; showMain();
+  B.player.st -= tech.cost;
+
+  const pS=document.getElementById('pSprite');
+  drawFighter(pS,PLAYER_PAL,'attack');
+  bFlash();
+
+  setTimeout(()=>{
+    let dmg = tech.dmg + Math.floor(Math.random()*8)-3;
+    if(tech.art==='BOXE'&&B.pos==='EM PÉ') dmg=Math.floor(dmg*1.15);
+    if(tech.art==='BJJ'&&B.pos==='CHÃO') dmg=Math.floor(dmg*1.3);
+    dmg=Math.max(1,dmg);
+    B.enemy.hp-=dmg;
+
+    const eS=document.getElementById('eSprite');
+    eS.classList.add('shakeE');
+    drawFighter(eS,B.npc.enemy.palette,'hurt');
+    setTimeout(()=>{ eS.classList.remove('shakeE'); drawFighter(eS,B.npc.enemy.palette,'idle'); },400);
+
+    let fx='';
+    if(tech.fx==='stun'){ B.enemyStunned=true; fx=' Adversário ATORDOADO!'; }
+    if(tech.fx==='ground'){ B.pos='CHÃO'; fx=' DERRUBADO!'; }
+
+    renderBattle();
+    drawFighter(pS,PLAYER_PAL,'idle');
+
+    bMsg(`${tech.name}! ${dmg} de dano!${fx}`,()=>{
+      if(B.enemy.hp<=0){ endBattle(true); return; }
+      B.turn='enemy'; B.busy=false; renderBattle();
+      setTimeout(enemyTurn,700);
+    });
+  },280);
+}
+
+function doRest() {
+  if(B.busy||B.turn!=='player') return;
+  B.busy=true; showMain();
+  const rec=Math.floor(Math.random()*10)+15;
+  B.player.st=Math.min(B.player.maxSt,B.player.st+rec);
+  renderBattle();
+  bMsg(`Recuperaste ${rec} ST!`,()=>{
+    B.turn='enemy'; B.busy=false; renderBattle();
+    setTimeout(enemyTurn,700);
+  });
+}
+
+function doFlee() {
+  if(B.busy||B.turn!=='player') return;
+  B.busy=true; showMain();
+  bMsg(`Não consegues fugir!`,()=>{ B.turn='enemy'; B.busy=false; renderBattle(); setTimeout(enemyTurn,700); });
+}
+
+function enemyTurn() {
+  if(B.enemy.hp<=0) return;
+
+  if(B.enemyStunned) {
+    B.enemyStunned=false;
+    bMsg(`${B.enemy.name} está ATORDOADO!`,()=>endEnemyTurn());
+    return;
+  }
+
+  const pool = ENEMY_TECHS_BY_STYLE[B.npc.enemy.style] || ENEMY_TECHS_BY_STYLE.boxe;
+  const usable = pool.filter(t=>t.pos.includes(B.pos)&&B.enemy.st>=t.cost);
+
+  if(!usable.length) {
+    const rec=12+Math.floor(Math.random()*8);
+    B.enemy.st=Math.min(B.enemy.maxSt,B.enemy.st+rec);
+    bMsg(`${B.enemy.name} recupera fôlego!`,()=>endEnemyTurn());
+    return;
+  }
+
+  const tech=usable[Math.floor(Math.random()*usable.length)];
+  B.enemy.st-=tech.cost;
+
+  const eS=document.getElementById('eSprite');
+  drawFighter(eS,B.npc.enemy.palette,'attack');
+  bFlash();
+
+  setTimeout(()=>{
+    let dmg=tech.dmg+Math.floor(Math.random()*6)-2;
+    if(tech.art==='BOXE'&&B.pos==='EM PÉ') dmg=Math.floor(dmg*1.1);
+    dmg=Math.max(1,dmg);
+    B.player.hp-=dmg;
+
+    const pS=document.getElementById('pSprite');
+    pS.classList.add('shake');
+    drawFighter(pS,PLAYER_PAL,'hurt');
+    setTimeout(()=>{ pS.classList.remove('shake'); drawFighter(pS,PLAYER_PAL,'idle'); },400);
+
+    let fx='';
+    if(tech.fx==='stun'){ B.playerStunned=true; fx=' ATORDOADO!'; }
+    if(tech.fx==='ground'){ B.pos='CHÃO'; fx=' DERRUBADO!'; }
+
+    renderBattle();
+    drawFighter(eS,B.npc.enemy.palette,'idle');
+
+    bMsg(`${B.enemy.name} usou ${tech.name}! -${dmg} HP!${fx}`,()=>{
+      if(B.player.hp<=0){ endBattle(false); return; }
+      endEnemyTurn();
+    });
+  },280);
+}
+
+function endEnemyTurn() {
+  B.round++;
+  B.turn='player'; B.busy=false;
+  if(B.playerStunned){ B.playerStunned=false; bMsg(`Estás ATORDOADO! Perdes o turno!`,()=>{ B.turn='enemy'; setTimeout(enemyTurn,800); }); return; }
+  renderBattle();
+  bMsg(`Round ${B.round}. O que fazes?`);
+}
+
+function bFlash() {
+  const ov=document.getElementById('flashOverlay');
+  ov.style.opacity='0.6';
+  setTimeout(()=>ov.style.opacity='0',130);
+}
+
+function endBattle(won) {
+  B.busy=true;
+  // sync player HP/ST
+  player.hp = Math.max(1, B.player.hp);
+  player.st = B.player.st;
+  document.getElementById('hudHp').textContent = player.hp;
+  document.getElementById('hudSt').textContent  = player.st;
+
+  const es=document.getElementById('endScreen');
+  es.style.display='flex';
+  document.getElementById('endTitle').textContent = won ? 'VITÓRIA!' : 'K.O.';
+  document.getElementById('endSub').textContent = won
+    ? `Recompensa: ${B.npc.enemy.reward}`
+    : 'Precisas de treinar mais...';
+
+  if(won) player.defeatedNPCs.add(B.npc.id);
+}
+
+function returnToMap() {
+  document.getElementById('battleScreen').style.display='none';
+  document.getElementById('endScreen').style.display='none';
+  gameState.inBattle=false;
+  B={};
+  // Restore HP if won, else small recovery
+  if(!player.defeatedNPCs.has(gameState.currentNPC?.id)) {
+    player.hp = Math.min(player.maxHp, player.hp + 20);
+  }
+  document.getElementById('hudHp').textContent = player.hp;
+  document.getElementById('hudSt').textContent  = player.st;
+  drawMap();
+}
+
+// ============================================================
+// MAIN GAME LOOP
+// ============================================================
+let lastTime = 0;
+let moveAccum = 0;
+
+function gameLoop(ts) {
+  const dt = ts - lastTime;
+  lastTime = ts;
+
+  if (!gameState.inBattle && !gameState.inDialogue) {
+    moveAccum += dt;
+    if (moveAccum >= MOVE_DELAY) {
+      moveAccum = 0;
+      if (keys['ArrowUp']    || keys['w'] || keys['W']) { player.facing='up';    tryMove(0,-1); }
+      else if (keys['ArrowDown'] || keys['s'] || keys['S']) { player.facing='down';  tryMove(0,1); }
+      else if (keys['ArrowLeft'] || keys['a'] || keys['A']) { player.facing='left';  tryMove(-1,0); }
+      else if (keys['ArrowRight']|| keys['d'] || keys['D']) { player.facing='right'; tryMove(1,0); }
+    }
+  }
+
+  // Reposition player canvas
+  const pEl = document.getElementById('player');
+  pEl.style.left = (player.tx * TILE) + 'px';
+  pEl.style.top  = (player.ty * TILE) + 'px';
+
+  // Animate player sprite
+  drawPlayer(Math.floor(ts / 200));
+
+  // Redraw NPCs (for exclamation marks)
+  if (!gameState.inBattle) {
+    mctx.clearRect(0,0,480,432);
+    drawMap();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+drawMap();
+checkZone();
+checkNPCProximity();
+showLocTag('MOURARIA — CENTRO');
+requestAnimationFrame(gameLoop);
+
+// Welcome message
+setTimeout(()=>{
+  gameState.inDialogue=true;
+  const box=document.getElementById('dialogBox');
+  box.style.display='block';
+  document.getElementById('dialogName').textContent='SISTEMA';
+  document.getElementById('dialogText').textContent='';
+  let txt="Lisboa. Mouraria. O teu treino começa aqui.\nFala com os NPCs. Z para interagir.";
+  let i=0;
+  const iv=setInterval(()=>{ document.getElementById('dialogText').textContent+=txt[i++]; if(i>=txt.length)clearInterval(iv); },28);
+  setTimeout(()=>{ box.style.display='none'; gameState.inDialogue=false; },4500);
+},600);
+</script>
+</body>
+</html>
