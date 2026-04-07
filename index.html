@@ -1,15 +1,647 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Main</title>
-    <link rel="shortcut icon" href="media/logo.png" type="image/x-icon">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fighter's Path</title>
+<link rel="shortcut icon" href="media/logo.png" type="image/x-icon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Barlow+Condensed:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:   #0a0a0a;
+  --dark:    #111111;
+  --card:    #161616;
+  --border:  rgba(255,255,255,0.07);
+  --red:     #c0392b;
+  --gold:    #c9923a;
+  --white:   #f0ece4;
+  --muted:   rgba(240,236,228,0.45);
+  --faint:   rgba(240,236,228,0.18);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  font-weight: 300;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 6vw 9vh;
+  position: relative;
+  overflow: hidden;
+}
+
+#hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(90deg, transparent, transparent 120px, rgba(255,255,255,0.012) 120px, rgba(255,255,255,0.012) 121px),
+    repeating-linear-gradient(0deg,  transparent, transparent 120px, rgba(255,255,255,0.012) 120px, rgba(255,255,255,0.012) 121px);
+  animation: gridPan 22s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes gridPan {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 120px 120px, 120px 120px; }
+}
+
+#hero::after {
+  content: '';
+  position: absolute;
+  top: -10%; right: 9%;
+  width: 1px; height: 130%;
+  background: linear-gradient(to bottom, transparent, var(--red) 35%, var(--red) 65%, transparent);
+  opacity: 0.3;
+  transform: rotate(7deg);
+  transform-origin: top;
+}
+
+.hero-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(10px, 1.1vw, 12px);
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 1.2rem;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.15s forwards;
+}
+
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(5rem, 15vw, 14rem);
+  line-height: 0.87;
+  letter-spacing: 0.02em;
+  color: var(--white);
+  text-shadow: 0 0 100px rgba(192,57,43,0.18);
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.3s forwards;
+}
+
+.hero-title em { font-style: normal; color: var(--gold); }
+
+.hero-tagline {
+  margin-top: 2rem;
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-style: italic;
+  color: var(--muted);
+  max-width: 540px;
+  line-height: 1.75;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.45s forwards;
+}
+
+.hero-cta {
+  margin-top: 2.5rem;
+  display: flex; gap: 1rem; flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.6s forwards;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: var(--red);
+  color: var(--white);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  text-decoration: none;
+  padding: 14px 34px;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: #a93226; }
+
+.btn-ghost {
+  display: inline-block;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  text-decoration: none;
+  padding: 14px 34px;
+  border: 1px solid var(--border);
+  transition: color 0.2s, border-color 0.2s;
+}
+.btn-ghost:hover { color: var(--white); border-color: rgba(255,255,255,0.22); }
+
+.scroll-hint {
+  position: absolute; bottom: 3.5vh; right: 6vw;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--faint);
+  writing-mode: vertical-rl;
+  display: flex; align-items: center; gap: 10px;
+  opacity: 0; animation: fadeIn 1s ease 1.1s forwards;
+}
+.scroll-hint::before {
+  content: '';
+  display: block; width: 1px; height: 44px;
+  background: linear-gradient(to bottom, transparent, var(--faint));
+}
+
+/* ── SHARED ── */
+section { padding: 8vh 6vw; border-top: 1px solid var(--border); }
+
+.section-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--red); margin-bottom: 0.6rem;
+}
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
+  line-height: 1; letter-spacing: 0.03em;
+  color: var(--white); margin-bottom: 2rem;
+}
+
+/* ── ABOUT ── */
+#about {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6vw; align-items: center;
+}
+@media(max-width:700px){ #about{ grid-template-columns:1fr; } }
+
+.about-text p {
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.85; color: var(--muted);
+  margin-bottom: 1.1rem;
+}
+.about-text p strong { color: var(--white); font-weight: 400; }
+
+.stats-box {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border);
+}
+.stat-cell {
+  background: var(--card);
+  padding: 1.5rem 1.25rem;
+}
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem; color: var(--gold);
+  line-height: 1; margin-bottom: 0.35rem;
+}
+.stat-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ── ARTS ── */
+#arts { background: var(--dark); }
+
+.arts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1px; background: var(--border);
+}
+
+.art-card {
+  background: var(--card);
+  padding: 1.4rem 1.15rem;
+  position: relative; overflow: hidden;
+  transition: background 0.2s;
+}
+.art-card:hover { background: #1c1c1c; }
+.art-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px; opacity: 0.85;
+}
+.art-card.bjj::before      { background: #2255cc; }
+.art-card.muay::before     { background: #cc1133; }
+.art-card.boxe::before     { background: #aa2200; }
+.art-card.wrestling::before{ background: #aa8800; }
+.art-card.judo::before     { background: linear-gradient(90deg,#444,#999); }
+.art-card.karate::before   { background: #cc5500; }
+.art-card.capoeira::before { background: #009933; }
+.art-card.kungfu::before   { background: #cc0000; }
+.art-card.tkd::before      { background: #0044bb; }
+.art-card.sambo::before    { background: #6633aa; }
+
+.art-flag { font-size: 1.3rem; margin-bottom: 0.65rem; display: block; }
+.art-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.25rem; letter-spacing: 0.04em;
+  color: var(--white); margin-bottom: 0.2rem;
+}
+.art-origin {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 0.65rem;
+}
+.art-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.art-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  color: var(--faint);
+}
+
+/* ── CITIES ── */
+.cities-row {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; background: var(--border);
+}
+@media(max-width:600px){ .cities-row{ grid-template-columns:1fr; } }
+
+.city-card {
+  background: var(--card);
+  padding: 2rem 1.5rem;
+  position: relative; overflow: hidden;
+}
+.city-card::after {
+  content: attr(data-num);
+  position: absolute; bottom: -0.6rem; right: 0.75rem;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5.5rem; color: rgba(255,255,255,0.025);
+  line-height: 1; pointer-events: none;
+}
+.city-order {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--red);
+  margin-bottom: 0.45rem;
+}
+.city-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.4rem; letter-spacing: 0.03em;
+  color: var(--white); line-height: 1; margin-bottom: 0.4rem;
+}
+.city-art {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--gold);
+  margin-bottom: 0.7rem;
+}
+.city-desc { font-size: 14px; line-height: 1.7; color: var(--muted); }
+
+/* ── STORY ── */
+#story {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6vw; align-items: start;
+}
+@media(max-width:700px){ #story{ grid-template-columns:1fr; } }
+
+.story-text p {
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.85; color: var(--muted);
+  margin-bottom: 1.1rem;
+}
+.story-text p strong { color: var(--white); font-weight: 400; }
+
+.quote-block {
+  border-left: 2px solid var(--red);
+  padding: 1rem 1.5rem;
+  margin: 1.75rem 0;
+  font-style: italic;
+  font-size: clamp(15px, 1.6vw, 19px);
+  color: var(--white); line-height: 1.65;
+}
+.quote-block small { color: var(--muted); font-size: 0.75em; }
+
+/* ── LINKS ── */
+#links { background: var(--dark); }
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1px; background: var(--border);
+}
+
+.link-card {
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  background: var(--card);
+  padding: 1.75rem 1.5rem;
+  text-decoration: none; color: inherit;
+  transition: background 0.2s;
+  min-height: 190px;
+}
+.link-card:hover { background: #1c1c1c; }
+.link-card:hover .link-arrow { transform: translate(4px,-4px); }
+
+.link-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--red);
+  margin-bottom: 0.6rem;
+}
+.link-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.55rem; letter-spacing: 0.04em;
+  color: var(--white); line-height: 1; margin-bottom: 0.5rem;
+}
+.link-desc {
+  font-size: 13px; color: var(--muted);
+  line-height: 1.65; flex: 1; margin-bottom: 1.2rem;
+}
+.link-footer { display: flex; justify-content: space-between; align-items: center; }
+.link-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.link-badge.new { border-color: var(--gold); color: var(--gold); }
+.link-arrow { font-size: 1.1rem; color: var(--muted); transition: transform 0.2s; }
+
+/* ── FOOTER ── */
+footer {
+  padding: 4vh 6vw;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.footer-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem; letter-spacing: 0.08em;
+  color: var(--faint);
+}
+.footer-info {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--faint);
+  text-align: right; line-height: 1.8;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(22px); }
+  to   { opacity:1; transform:none; }
+}
+@keyframes fadeIn {
+  from { opacity:0; } to { opacity:1; }
+}
+
+.reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.reveal.visible { opacity:1; transform:none; }
+</style>
 </head>
 <body>
-    <ul>
-        <li><a href="versionList.html">Versões</a></li>
-        <li><a href="gdd.html">Game Design Document</a></li>
-    </ul>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-eyebrow">Alpha v0.1 &nbsp;·&nbsp; Lisboa Beta &nbsp;·&nbsp; Portugal</div>
+  <h1 class="hero-title">FIGHTER<em>'S</em><br>PATH</h1>
+  <p class="hero-tagline">Um RPG de artes marciais ambientado em Portugal. Treina em ginásios de todo o país, domina dez disciplinas e torna-te no primeiro campeão de MMA nacional.</p>
+  <div class="hero-cta">
+    <a href="versionList.html" class="btn-primary">Jogar Alpha</a>
+    <a href="gdd.html" class="btn-ghost">Ver GDD</a>
+  </div>
+  <div class="scroll-hint">Scroll</div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-text reveal">
+    <div class="section-label">O Jogo</div>
+    <h2 class="section-title">Domina.<br>Conquista.<br>Torna-te lendário.</h2>
+    <p>Inspirado em Pokémon mas enraizado no mundo real das artes marciais, <strong>Fighter's Path</strong> coloca-te a percorrer Portugal de norte a sul à procura dos melhores mestres.</p>
+    <p>Cada cidade tem um ginásio. Cada ginásio tem uma sua arte. Cada arte transforma a tua forma de lutar. No final, só um lutador pode ser considerado o melhor do país.</p>
+  </div>
+  <div class="stats-box reveal">
+    <div class="stat-cell">
+      <div class="stat-num">10</div>
+      <div class="stat-label">Artes Marciais</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">10</div>
+      <div class="stat-label">Ginásios</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">5</div>
+      <div class="stat-label">Posições de Combate</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Cidades no Beta</div>
+    </div>
+  </div>
+</section>
+
+<!-- ARTES -->
+<section id="arts">
+  <div class="reveal">
+    <div class="section-label">Disciplinas</div>
+    <h2 class="section-title">As 10 Artes</h2>
+  </div>
+  <div class="arts-grid reveal">
+    <div class="art-card bjj">
+      <span class="art-flag">🇧🇷</span>
+      <div class="art-name">Brazilian Jiu-Jitsu</div>
+      <div class="art-origin">Brasil · Família Gracie</div>
+      <div class="art-tags"><span class="art-tag">Grappling</span><span class="art-tag">Chão</span><span class="art-tag">Submissions</span></div>
+    </div>
+    <div class="art-card muay">
+      <span class="art-flag">🇹🇭</span>
+      <div class="art-name">Muay Thai</div>
+      <div class="art-origin">Tailândia · 8 Armas</div>
+      <div class="art-tags"><span class="art-tag">Striking</span><span class="art-tag">Clinch</span><span class="art-tag">Joelhos</span></div>
+    </div>
+    <div class="art-card boxe">
+      <span class="art-flag">🇺🇸</span>
+      <div class="art-name">Boxe</div>
+      <div class="art-origin">EUA · Tradição Pugilista</div>
+      <div class="art-tags"><span class="art-tag">Punhos</span><span class="art-tag">Footwork</span><span class="art-tag">Distância</span></div>
+    </div>
+    <div class="art-card wrestling">
+      <span class="art-flag">🇺🇸</span>
+      <div class="art-name">Wrestling</div>
+      <div class="art-origin">EUA · Grécia Antiga</div>
+      <div class="art-tags"><span class="art-tag">Takedowns</span><span class="art-tag">Controlo</span><span class="art-tag">Ground</span></div>
+    </div>
+    <div class="art-card judo">
+      <span class="art-flag">🇯🇵</span>
+      <div class="art-name">Judo</div>
+      <div class="art-origin">Japão · Jigoro Kano</div>
+      <div class="art-tags"><span class="art-tag">Arremessos</span><span class="art-tag">Clinch</span><span class="art-tag">Queda</span></div>
+    </div>
+    <div class="art-card karate">
+      <span class="art-flag">🇯🇵</span>
+      <div class="art-name">Karate</div>
+      <div class="art-origin">Japão · Kyokushin</div>
+      <div class="art-tags"><span class="art-tag">Golpes</span><span class="art-tag">Precisão</span><span class="art-tag">Distância</span></div>
+    </div>
+    <div class="art-card capoeira">
+      <span class="art-flag">🇧🇷</span>
+      <div class="art-name">Capoeira</div>
+      <div class="art-origin">Brasil · Angola</div>
+      <div class="art-tags"><span class="art-tag">Esquivas</span><span class="art-tag">Kicks</span><span class="art-tag">Acrobático</span></div>
+    </div>
+    <div class="art-card kungfu">
+      <span class="art-flag">🇨🇳</span>
+      <div class="art-name">Kung Fu</div>
+      <div class="art-origin">China · Wushu / San Shou</div>
+      <div class="art-tags"><span class="art-tag">Velocidade</span><span class="art-tag">Mãos</span><span class="art-tag">Mobilidade</span></div>
+    </div>
+    <div class="art-card tkd">
+      <span class="art-flag">🇰🇷</span>
+      <div class="art-name">Taekwondo</div>
+      <div class="art-origin">Coreia do Sul · Olímpico</div>
+      <div class="art-tags"><span class="art-tag">Kicks Altos</span><span class="art-tag">Velocidade</span><span class="art-tag">Agilidade</span></div>
+    </div>
+    <div class="art-card sambo">
+      <span class="art-flag">🇷🇺</span>
+      <div class="art-name">Sambo</div>
+      <div class="art-origin">Rússia · URSS</div>
+      <div class="art-tags"><span class="art-tag">Leg Locks</span><span class="art-tag">Transições</span><span class="art-tag">Completo</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CIDADES -->
+<section id="cidades">
+  <div class="reveal">
+    <div class="section-label">Beta — 3 Cidades</div>
+    <h2 class="section-title">Portugal como palco</h2>
+  </div>
+  <div class="cities-row reveal">
+    <div class="city-card" data-num="01">
+      <div class="city-order">Cidade 01 · Início</div>
+      <div class="city-name">Montijo</div>
+      <div class="city-art">🇧🇷 Brazilian Jiu-Jitsu</div>
+      <p class="city-desc">Armazéns industriais, salinas, vista do Tejo. A Academia Gracie Sul esconde-se numa doca. Mestre Carlos "Formiga" espera.</p>
+    </div>
+    <div class="city-card" data-num="02">
+      <div class="city-order">Cidade 02 · Ferry</div>
+      <div class="city-name">Lisboa</div>
+      <div class="city-art">🇮🇪 Boxe</div>
+      <p class="city-desc">Mouraria, Martim Moniz, margem do Tejo. O Gallagher's Boxing Club é subterrâneo. Coach Seamus O'Brien não facilita.</p>
+    </div>
+    <div class="city-card" data-num="03">
+      <div class="city-order">Cidade 03 · Comboio</div>
+      <div class="city-name">Porto</div>
+      <div class="city-art">🇯🇵 Karate Kyokushin</div>
+      <p class="city-desc">Ribeira, Douro, granito e neblina. O Dojo Bushido exige reverência. Sensei Kenji Mota fala pouco — ensina com o exemplo.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HISTÓRIA -->
+<section id="story">
+  <div class="reveal">
+    <div class="section-label">História</div>
+    <h2 class="section-title">Quem<br>és tu?</h2>
+  </div>
+  <div class="story-text reveal">
+    <p>O protagonista acorda em Braga sem memórias de combate. Mas o corpo não mente — os reflexos estão lá. Alguém apagou o seu passado de propósito.</p>
+    <div class="quote-block">
+      "O teu corpo lembra o que a tua mente esqueceu."<br>
+      <small>— Sensei Fernão Azevedo, Judo · Braga</small>
+    </div>
+    <p>Por trás dos ginásios existe uma organização que controla o desporto de combate nacional: a <strong>Ordem do Cartel</strong>. Eles decidem quem sobe e quem cai.</p>
+    <p>O campeonato final em Lisboa não é só uma luta. É uma escolha moral — e o passado do protagonista está no centro de tudo.</p>
+  </div>
+</section>
+
+<!-- LINKS -->
+<section id="links">
+  <div class="reveal">
+    <div class="section-label">Acesso</div>
+    <h2 class="section-title">Explorar</h2>
+  </div>
+  <div class="links-grid reveal">
+    <a class="link-card" href="fighters_path_lisboa.html">
+      <div>
+        <div class="link-tag">Exploração</div>
+        <div class="link-title">Lisboa — Mouraria</div>
+        <p class="link-desc">Mapa top-down jogável. 3 NPCs com diálogo e combate. WASD para mover, Z para interagir.</p>
+      </div>
+      <div class="link-footer">
+        <span class="link-badge new">Novo</span>
+        <span class="link-arrow">↗</span>
+      </div>
+    </a>
+    <a class="link-card" href="fighters_path_alpha.html">
+      <div>
+        <div class="link-tag">Combate</div>
+        <div class="link-title">Alpha — Combate</div>
+        <p class="link-desc">Sistema de turnos isolado. 15 técnicas, 5 artes marciais, sistema de posições e stamina.</p>
+      </div>
+      <div class="link-footer">
+        <span class="link-badge">Alpha</span>
+        <span class="link-arrow">↗</span>
+      </div>
+    </a>
+    <a class="link-card" href="gdd.html">
+      <div>
+        <div class="link-tag">Documentação</div>
+        <div class="link-title">Game Design Document</div>
+        <p class="link-desc">GDD completo com cidades, ginásios, mecânicas, arquitectura Unity 2D e milestones.</p>
+      </div>
+      <div class="link-footer">
+        <span class="link-badge">GDD v2</span>
+        <span class="link-arrow">↗</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">Fighter's Path</div>
+  <div class="footer-info">
+    Alpha v0.1 · Lisboa Beta<br>
+    HTML Prototype → Unity 2D
+  </div>
+</footer>
+
+<script>
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('visible');
+    const children = e.target.querySelectorAll(
+      '.art-card, .city-card, .stat-cell, .link-card'
+    );
+    children.forEach((el, i) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(16px)';
+      el.style.transition = `opacity 0.5s ease ${i*55}ms, transform 0.5s ease ${i*55}ms`;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+      }));
+    });
+  });
+}, { threshold: 0.07 });
+
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
 </body>
 </html>
