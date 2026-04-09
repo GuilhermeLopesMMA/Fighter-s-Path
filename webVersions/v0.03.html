@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fighter's Path — Lisboa</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;image-rendering:pixelated;}
+:root{--g0:#0f380f;--g1:#306230;--g2:#8bac0f;--g3:#9bbc0f;--g4:#e0f0b0;--gd:#0a280a;--gr:#b03000;--gg:#c88000;}
+html,body{width:100%;height:100%;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;overflow:hidden;}
+#wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+#topBar{width:480px;display:flex;justify-content:space-between;font-size:7px;color:var(--g2);}
+#screen{width:480px;height:432px;background:var(--g0);border:6px solid #333;outline:3px solid #555;position:relative;overflow:hidden;}
+canvas{image-rendering:pixelated;}
+#mapLayer{position:absolute;inset:0;}
+#player{position:absolute;z-index:10;}
+#hud{position:absolute;top:4px;left:4px;font-size:6px;color:var(--g4);background:rgba(15,56,15,.88);border:1px solid var(--g1);padding:4px 7px;z-index:20;line-height:2.2;}
+#minimap{position:absolute;top:4px;right:4px;width:80px;height:64px;background:rgba(10,40,10,.9);border:1px solid var(--g1);z-index:20;}
+#zoneTag{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:6px;color:var(--g4);background:var(--g0);border:1px solid var(--g1);padding:3px 8px;z-index:25;white-space:nowrap;opacity:0;transition:opacity .4s;}
+#dialogBox{display:none;position:absolute;bottom:0;left:0;right:0;height:100px;background:var(--g0);border-top:4px solid var(--g1);padding:8px 10px 6px;z-index:30;}
+#dName{font-size:6px;color:var(--g3);margin-bottom:5px;}
+#dText{font-size:7px;color:var(--g4);line-height:1.9;}
+#dPrompt{position:absolute;bottom:8px;right:10px;font-size:6px;color:var(--g2);animation:blink .9s step-end infinite;}
+#fadeOv{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:50;transition:opacity .4s;}
+#statusBar{width:480px;display:flex;justify-content:space-between;font-size:6px;color:var(--g1);}
+@keyframes blink{50%{opacity:0;}}
+
+/* OVERLAYS */
+.overlay{display:none;position:absolute;inset:0;z-index:80;flex-direction:column;}
+.ov-header{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--g3);border-bottom:2px solid var(--g1);padding:10px;text-align:center;background:var(--gd);}
+.ov-body{flex:1;padding:10px;overflow-y:auto;background:var(--g0);}
+.ov-btn{display:block;width:100%;background:var(--gd);border:1px solid var(--g1);color:var(--g4);font-family:'Press Start 2P',monospace;font-size:6px;padding:8px;cursor:pointer;text-align:left;margin:4px 0;}
+.ov-btn:hover{background:var(--g1);color:var(--g3);}
+.ov-txt{font-size:6px;color:var(--g4);line-height:2.2;margin-bottom:8px;}
+
+/* BATTLE */
+#battleScreen{display:none;position:absolute;inset:0;background:var(--g0);flex-direction:column;z-index:100;}
+#bField{width:100%;height:192px;background:var(--g0);position:relative;overflow:hidden;flex-shrink:0;}
+#bField::after{content:'';position:absolute;bottom:32px;left:0;right:0;height:2px;background:var(--g1);box-shadow:0 4px 0 var(--gd),0 -4px 0 var(--gd);}
+#flashOv{position:absolute;inset:0;background:var(--g3);opacity:0;pointer-events:none;z-index:20;transition:opacity .1s;}
+.sBox{position:absolute;background:var(--g0);border:2px solid var(--g2);padding:4px 6px;font-size:5px;color:var(--g4);line-height:2;}
+#pSt{bottom:8px;left:6px;min-width:148px;}#eSt{top:8px;right:6px;min-width:148px;}
+.sN{font-size:6px;color:var(--g3);margin-bottom:3px;}
+.bRow{display:flex;align-items:center;gap:4px;margin:2px 0;}
+.bL{font-size:5px;color:var(--g2);width:14px;}
+.bTr{width:82px;height:6px;background:var(--gd);border:1px solid var(--g1);overflow:hidden;}
+.bFi{height:100%;transition:width .35s;}
+.bFi.hp{background:var(--g2);}.bFi.hp.low{background:var(--gr);}
+.bFi.st{background:var(--gg);}
+.bNum{font-size:5px;color:var(--g4);min-width:32px;}
+#posBan{position:absolute;top:4px;left:50%;transform:translateX(-50%);background:var(--g1);border:2px solid var(--g2);padding:3px 8px;font-size:6px;color:var(--g4);white-space:nowrap;z-index:10;}
+#turnT{position:absolute;top:4px;left:4px;font-size:5px;color:var(--gg);background:var(--gd);padding:2px 5px;border:1px solid var(--g1);}
+#rnT{position:absolute;top:4px;right:4px;font-size:5px;color:var(--g2);background:var(--gd);padding:2px 5px;border:1px solid var(--g1);}
+#lUI{flex:1;background:var(--g0);border-top:4px solid var(--g1);display:flex;flex-direction:column;}
+#mBox{padding:8px 10px;min-height:62px;border-bottom:2px solid var(--g1);font-size:7px;color:var(--g4);line-height:1.8;}
+#mCur{display:inline-block;width:6px;height:6px;background:var(--g2);animation:blink .8s step-end infinite;vertical-align:middle;margin-left:2px;}
+#mArea{flex:1;display:flex;}
+#mainM{display:grid;grid-template-columns:1fr 1fr;width:100%;}
+.mB{background:var(--g0);border:1px solid var(--g1);color:var(--g4);font-family:'Press Start 2P',monospace;font-size:7px;padding:10px 6px;cursor:pointer;text-align:center;}
+.mB:hover{background:var(--g1);color:var(--g3);}
+#techM{display:none;flex-direction:column;width:100%;overflow-y:auto;}
+.tB{background:var(--g0);border-bottom:1px solid var(--g1);color:var(--g4);font-family:'Press Start 2P',monospace;font-size:6px;padding:7px 8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:4px;}
+.tB:hover{background:var(--g1);}.tB.off{opacity:.35;cursor:not-allowed;pointer-events:none;}
+.tA{font-size:5px;padding:1px 4px;background:var(--g1);color:var(--g3);}
+.tC{color:var(--gg);font-size:5px;}.tD{color:var(--gr);font-size:5px;}
+#posM{display:none;flex-direction:column;width:100%;}
+.pB{background:var(--g0);border-bottom:1px solid var(--g1);color:var(--g4);font-family:'Press Start 2P',monospace;font-size:6px;padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;}
+.pB:hover,.pB.cur{background:var(--g1);color:var(--g3);}.pB.cur{border-left:3px solid var(--g2);}
+#bkB{background:var(--gd);border:none;border-top:1px solid var(--g1);color:var(--g2);font-family:'Press Start 2P',monospace;font-size:6px;padding:6px;cursor:pointer;text-align:center;width:100%;}
+#bkB:hover{background:var(--g1);}
+#endScr{display:none;position:absolute;inset:0;background:var(--g0);align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:200;}
+#endT{font-size:14px;color:var(--g3);text-shadow:3px 3px 0 var(--gd);animation:pulse 1s ease infinite alternate;}
+@keyframes pulse{from{color:var(--g3);}to{color:var(--gg);}}
+#endS{font-size:7px;color:var(--g2);}
+.eB{background:var(--g1);border:2px solid var(--g2);color:var(--g4);font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 12px;cursor:pointer;margin:2px;}
+.eB:hover{background:var(--g2);color:var(--g0);}
+.shake{animation:shk .3s ease;}
+@keyframes shk{0%,100%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);}}
+.shE{animation:shkE .3s ease;}
+@keyframes shkE{0%,100%{transform:scaleX(-1) translateX(0);}20%{transform:scaleX(-1) translateX(-6px);}40%{transform:scaleX(-1) translateX(6px);}60%{transform:scaleX(-1) translateX(-4px);}80%{transform:scaleX(-1) translateX(4px);}}
+
+/* CARTEL */
+#cartelScr{display:none;position:absolute;inset:0;background:#0a0500;z-index:98;flex-direction:column;padding:16px;}
+.ct-top{font-size:8px;color:#cc2200;text-align:center;margin-bottom:12px;animation:pulse 1.5s ease infinite alternate;}
+.ct-txt{font-size:6px;color:var(--g4);line-height:2.2;margin-bottom:10px;}
+.ct-btn{background:#1a0800;border:1px solid #aa2200;color:#ff6644;font-family:'Press Start 2P',monospace;font-size:6px;padding:8px;cursor:pointer;margin:3px 0;display:block;width:100%;}
+.ct-btn:hover{background:#2a1000;}
+.ct-btn.good{border-color:var(--g2);color:var(--g2);}
+
+/* SPEED BAG */
+#sbScr{display:none;position:absolute;inset:0;background:var(--g0);z-index:95;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;}
+.sb-tgt{width:56px;height:56px;background:var(--gr);border:3px solid var(--g2);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;transition:transform .1s;user-select:none;}
+.sb-tgt:active{transform:scale(.82);}
+.sb-bar{width:200px;height:10px;background:var(--gd);border:1px solid var(--g1);}
+.sb-fill{height:100%;background:var(--gg);transition:width .08s;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="topBar"><span>FIGHTER'S PATH</span><span id="aN">LISBOA — CAIS DO SODRÉ</span><span>v0.2</span></div>
+  <div id="screen">
+    <canvas id="mapLayer" width="480" height="432"></canvas>
+    <canvas id="player" width="16" height="16" style="position:absolute;z-index:10;"></canvas>
+    <div id="hud">HP <span id="hHP">100</span>/100 &nbsp;ST <span id="hST">80</span>/80<br>💰<span id="hCO">0</span> &nbsp;📍<span id="hZO">Cais</span></div>
+    <canvas id="minimap" width="80" height="64" style="position:absolute;top:4px;right:4px;z-index:20;border:1px solid var(--g1);background:rgba(10,40,10,.9);"></canvas>
+    <div id="zoneTag"></div>
+    <div id="dialogBox"><div id="dName"></div><div id="dText"></div><div id="dPrompt">▼ Z</div></div>
+    <div id="fadeOv"></div>
+
+    <!-- BATTLE -->
+    <div id="battleScreen">
+      <div id="bField">
+        <div id="flashOv"></div>
+        <div id="turnT">SEU TURNO</div><div id="rnT">RND 1</div>
+        <div id="posBan">EM PÉ</div>
+        <canvas id="pSpr" width="48" height="64" style="position:absolute;bottom:34px;left:40px;"></canvas>
+        <canvas id="eSpr" width="48" height="64" style="position:absolute;bottom:34px;right:40px;transform:scaleX(-1);"></canvas>
+        <div class="sBox" id="pSt"><div class="sN" id="pN">RUI SANTOS</div>
+          <div class="bRow"><div class="bL">HP</div><div class="bTr"><div class="bFi hp" id="pHB" style="width:100%"></div></div><div class="bNum" id="pHN">100</div></div>
+          <div class="bRow"><div class="bL">ST</div><div class="bTr"><div class="bFi st" id="pSB" style="width:100%"></div></div><div class="bNum" id="pSN">80</div></div></div>
+        <div class="sBox" id="eSt"><div class="sN" id="eN">???</div>
+          <div class="bRow"><div class="bL">HP</div><div class="bTr"><div class="bFi hp" id="eHB" style="width:100%"></div></div><div class="bNum" id="eHN">100</div></div>
+          <div class="bRow"><div class="bL">ST</div><div class="bTr"><div class="bFi st" id="eSB" style="width:100%"></div></div><div class="bNum" id="eSN">90</div></div></div>
+      </div>
+      <div id="lUI">
+        <div id="mBox"><span id="mTxt"></span><span id="mCur"></span></div>
+        <div id="mArea">
+          <div id="mainM">
+            <button class="mB" onclick="showTech()">⚔ TÉCNICAS</button>
+            <button class="mB" onclick="showPos()">🔄 POSIÇÃO</button>
+            <button class="mB" onclick="doRest()">💤 DESCANSAR</button>
+            <button class="mB" onclick="doFlee()">🏃 FUGIR</button>
+          </div>
+          <div id="techM"></div><div id="posM"></div>
+        </div>
+      </div>
+      <div id="endScr">
+        <div id="endT">VITÓRIA!</div><div id="endS"></div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:4px;">
+          <button class="eB" onclick="returnToMap()">◀ MAPA</button>
+          <button class="eB" onclick="openStats()">📊 STATS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GYM OVERLAY -->
+    <div id="gymScr" class="overlay"><div class="ov-header" id="gymT">GINÁSIO</div><div class="ov-body" id="gymB"></div></div>
+
+    <!-- STATS OVERLAY -->
+    <div id="statsScr" class="overlay"><div class="ov-header">📊 FICHA DO LUTADOR</div><div class="ov-body" id="statsB"></div></div>
+
+    <!-- SHOP OVERLAY -->
+    <div id="shopScr" class="overlay"><div class="ov-header" style="color:var(--gg)">🛒 LOJA — MARTIM MONIZ</div><div class="ov-body" id="shopB"></div></div>
+
+    <!-- CARTEL EVENT -->
+    <div id="cartelScr">
+      <div class="ct-top">⚠ ORDEM DO CARTEL ⚠</div>
+      <div class="ct-txt" id="ctTxt"></div>
+      <div id="ctCh"></div>
+    </div>
+
+    <!-- SPEED BAG -->
+    <div id="sbScr">
+      <div class="ov-header" style="background:var(--gr);color:#fff;width:100%;text-align:center;padding:8px;font-size:7px;">SPEED BAG — TREINO DE BOXE</div>
+      <div style="font-size:6px;color:var(--g2);text-align:center;" id="sbInfo">Carrega 20x em 15 segundos!</div>
+      <div class="sb-tgt" id="sbTgt" onclick="hitBag()">HIT</div>
+      <div class="sb-bar"><div class="sb-fill" id="sbFill" style="width:0%"></div></div>
+      <div style="font-size:6px;color:var(--g4);text-align:center;" id="sbScore">0/20</div>
+      <button class="ov-btn" id="sbClose" style="display:none;margin-top:8px;text-align:center;" onclick="closeSb()">◀ VOLTAR</button>
+    </div>
+  </div>
+  <div id="statusBar"><span>WASD MOVER</span><span>Z INTERAGIR</span><span>TAB STATS</span></div>
+</div>
+<script>
+// ─── TILES ───
+const TL=16,COLS=30,ROWS=27;
+const T={RD:0,SD:1,CB:2,BL:3,DO:4,WA:5,TR:6,GY:7,AZ:8,SG:9,LK:10};
+const TP={0:['#5a5248','#4e4840'],1:['#c8bfa8','#b8af98'],2:['#9a8868','#8a7858'],
+          3:['#7a6040','#6a5030'],4:['#8b4513','#6b2503'],5:['#1c5888','#1a4878'],
+          6:['#2d6b1a','#1d5b0a'],7:['#8b0000','#6b0000'],8:['#4488cc','#3370aa'],
+          9:['#8b6914','#6b4a00'],10:['#333','#222']};
+const WALKABLE=new Set([0,1,2,4]);
+
+// MAP 30x27 — full Lisboa region
+const RAW=[
+ "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+ "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+ "BB  RRRRRRRRRRRRRRRRRR  BBBBBB",
+ "BB  RRRRRRRRRRRRRRRRRR  BBBBBB",
+ "BBARR TTTT      TTTT RR BBBBBB",
+ "BBARR TTTT BGBB TTTT RR BBBBBB",
+ "BBARR      BGBB      RR BBBBBB",
+ "BBARR      DBBB      RR BBBBBB",
+ "BBARR SSSSSSSSSSSSSS RR BBBBBB",
+ "BA RR SSSSSSSSSSSSSS RR BBBBBB",
+ "   RR                RR BBBBBB",
+ "   RR                RR BBBBBB",
+ "RRRRRRRRRRRRRRRRRRRRRRRR RRRRR",
+ "RRRRRRRRRRRRRRRRRRRRRRRR RRRRR",
+ "CCCCCC     BBBBB BBBBBBBBBLLLL",
+ "CCCCCC     BGYBB BBBBBBBBBLLLL",
+ "CCCCCC     DGYBB AAAAAABBBBLLLL",
+ "CCCCCC     BBBBB AAAAAABBBBBBBB",
+ "  RRRR     AAAAA AAAAAABBBBBBBB",
+ "  RRRR TTTTTTTTT BBBBBBBBBBBBB",
+ "SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+ "SSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
+ "BB     CCCCCCCCCC   IIIIIIIBB",
+ "BB     CCCCCCCCCC   IIIIIIIBB",
+ "BBEEEE CCCCCCCCCC   BBBBBBBBB",
+ "BBEEEE CCCCCCCCCC   BBBBBBBBB",
+ "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+];
+function ct(c){return{B:3,R:0,S:1,A:8,C:2,G:7,D:4,T:6,W:5,I:9,E:10,L:10}[c]??0;}
+const MAP=RAW.map(row=>[...Array(COLS)].map((_,c)=>ct(row[c]||' ')));
+
+// ─── STATE ───
+const P={tx:4,ty:20,facing:'down',anim:0,hp:100,mHp:100,st:80,mSt:80,coins:0,
+  belts:{boxe:false,judo:false,capoeira:false},
+  ratings:{boxe:0,judo:0,capoeira:0,bjj:0,wrestling:0},
+  done:new Set(),cartel:null,seamusStrong:false,sbDone:false,judoDone:false,capDone:false,
+  bucal:false,rosin:false};
+const GS={dlg:false,battle:false,gym:false,stats:false,shop:false,cartel:false,sb:false,npc:null,step:0,dTimer:null,enemy:null};
+let B={};
+
+// ─── NPCS ───
+const NPCS=[
+  {id:'info',tx:3,ty:22,col:'#4488cc',hair:'#886644',name:'INFORMADOR',
+   lines:["Bem-vindo à Região de Lisboa!","6 zonas para explorar: Cais, Bairro Alto, Mouraria, Alfama, Martim Moniz, Intendente.","O ginásio boss fica em Mouraria. Procura o Gallagher's.","Fala com a rapariga de vermelho — ela conhece o terreno."]},
+  {id:'ana',tx:2,ty:8,col:'#cc2244',hair:'#1a0800',name:'ANA GUERREIRO',
+   lines:["Rui Santos, certo?","Ouvi dizer que estás a percorrer Lisboa toda.","O Seamus O'Brien é duro mas honesto. Treina muito antes de o desafiar.","Ah — e cuidado com os tipos de fato no Intendente. Ordem do Cartel.","Se precisares de ajuda, estou por aqui."]},
+  {id:'jinga',tx:3,ty:6,col:'#228822',hair:'#1a0a00',name:'MESTRE JINGA',
+   lines:["Axé! Quer aprender Capoeira?","Aqui no Bairro Alto, o chão é o nosso ring.","Vamos jogar!"],
+   battle:true,
+   enemy:{name:'MESTRE JINGA',hp:70,mHp:70,st:85,mSt:85,style:'capoeira',
+     pal:{skin:'#c07840',hair:'#1a0a00',gi:'#228822',belt:'#ffff00',dark:'#004400',light:'#88ff88'},
+     reward:'Capoeira +20 · Faixa Capoeira',coins:25,
+     post:["Bem jogado! A tua Capoeira está a crescer.","Volta para treinar quando quiseres."]}},
+  {id:'fernao',tx:22,ty:18,col:'#888880',hair:'#e8e8e8',name:'SENSEI FERNÃO',
+   lines:["...","O teu porte é de alguém que já lutou muito.","O corpo não mente, mesmo quando a memória mente.","Treina Judo comigo. Não cobro nada.","Mas guarda este momento. Vai precisar de te lembrar."],
+   afterDlg:'judoOffer'},
+  {id:'chad',tx:8,ty:20,col:'#4488cc',hair:'#bb8844',name:'CHAD (WRESTLING)',
+   lines:["Dude, where is the gym?","Back home I do college wrestling. Wanna go?"],
+   battle:true,
+   enemy:{name:'CHAD',hp:75,mHp:75,st:70,mSt:70,style:'wrestling',
+     pal:{skin:'#f0c890',hair:'#bb8844',gi:'#4488cc',belt:'#ffff00',dark:'#224488',light:'#aaccff'},
+     reward:'Wrestling +10',coins:30,
+     post:["Good fight! Lisboa rocks!"]}},
+  {id:'streetcap',tx:5,ty:5,col:'#ff8800',hair:'#0a0a0a',name:'CAPOEIRISTA DE RUA',
+   lines:["Ei! Desafio de rua!","Se ganhas levo-te a coisa especial."],
+   battle:true,
+   enemy:{name:'CAPOEIRISTA RUA',hp:55,mHp:55,st:65,mSt:65,style:'capoeira',
+     pal:{skin:'#b06830',hair:'#0a0a0a',gi:'#ff8800',belt:'#ffff00',dark:'#884400',light:'#ffcc88'},
+     reward:'Rosin Tape (item raro)',coins:0,isItem:'rosin',
+     post:["Boa! Esse tape vai ajudar no grappling."]}},
+  {id:'velho',tx:12,ty:24,col:'#888880',hair:'#e8e8e8',name:'VELHO DO BAIRRO',
+   lines:["Bons dias.","O Gallagher's sempre esteve ali. Sempre estará.","O Seamus bebe demais mas é o melhor que conheci."]},
+  {id:'lojeiro',tx:15,ty:20,col:'#c88000',hair:'#1a0800',name:'LOJEIRO',
+   lines:["Bem-vindo!","Temos tudo para um lutador sério."],isShop:true},
+  {id:'guarda',tx:28,ty:22,col:'#556655',hair:'#334433',name:'FISCAL CP',
+   lines:["A linha para o Porto parte aqui.","Mas só deixo passar quem tem a faixa de boxe de Lisboa.","Vence o Seamus primeiro!"]},
+  {id:'agent',tx:23,ty:23,col:'#222',hair:'#111',name:'AGENTE ???',
+   lines:["Eu não disse nada. Tu não me viste.","Mas pensa bem no que vais fazer no Gallagher's."],_hidden:true},
+];
+
+// ─── DRAW MAP ───
+const mc=document.getElementById('mapLayer').getContext('2d');
+mc.imageSmoothingEnabled=false;
+function drawTile(x,y,t,ck){
+  const px=x*TL,py=y*TL,c=TP[t]||['#444','#333'];
+  mc.fillStyle=(ck%2===0)?c[0]:c[1]; mc.fillRect(px,py,TL,TL);
+  if(t===6){mc.fillStyle='#1a4a08';mc.fillRect(px+3,py+2,10,9);mc.fillStyle='#0a3002';mc.fillRect(px+6,py+11,4,4);}
+  if(t===3&&x%3===1&&y%3===1){mc.fillStyle='#c8a840';mc.fillRect(px+4,py+3,4,5);mc.fillRect(px+10,py+3,4,5);}
+  if(t===7){mc.fillStyle='#cc2200';mc.fillRect(px+2,py+2,12,3);mc.fillStyle='#ff6644';mc.fillRect(px+4,py+3,8,1);}
+  if(t===9){mc.fillStyle='#c88000';mc.fillRect(px+2,py+2,12,3);}
+  if(t===8){mc.fillStyle='#2255aa';mc.fillRect(px+1,py+1,6,6);mc.fillRect(px+9,py+1,6,6);mc.fillRect(px+1,py+9,6,6);mc.fillRect(px+9,py+9,6,6);}
+  if(t===5){mc.fillStyle='rgba(80,160,220,.3)';mc.fillRect(px,py,TL,2);if((x+y)%4===0){mc.fillStyle='#5ab0e8';mc.fillRect(px+2,py+6,12,2);}}
+  if(t===2){mc.strokeStyle='#6a5838';mc.lineWidth=.5;mc.strokeRect(px+1,py+1,7,7);mc.strokeRect(px+9,py+9,6,6);}
+  if(t===4){mc.fillStyle='#c87030';mc.fillRect(px+4,py+4,8,11);mc.fillStyle='#a85020';mc.fillRect(px+9,py+7,2,2);}
+  if(t===10){mc.fillStyle='rgba(0,0,0,.6)';mc.fillRect(px,py,TL,TL);mc.fillStyle='#555';mc.fillRect(px+6,py+3,4,10);mc.fillRect(px+3,py+6,10,4);}
+}
+function drawNPCs(){
+  NPCS.forEach(n=>{
+    if(n._hidden&&P.cartel===null) return;
+    const x=n.tx*TL,y=n.ty*TL;
+    mc.fillStyle=n.col;mc.fillRect(x+3,y+6,10,8);
+    const sk={info:'#d4a870',ana:'#d4a070',jinga:'#c07840',fernao:'#d0c0a0',chad:'#f0c890',streetcap:'#b06830',velho:'#d0c0a0',lojeiro:'#d4a060',guarda:'#c0b090',agent:'#d0b090'};
+    mc.fillStyle=sk[n.id]||'#f0c890';mc.fillRect(x+4,y+1,8,7);
+    mc.fillStyle=n.hair||'#1a0800';mc.fillRect(x+4,y+1,8,2);
+    mc.fillStyle=n.col;mc.fillRect(x+4,y+14,3,2);mc.fillRect(x+9,y+14,3,2);
+    const d=Math.abs(n.tx-P.tx)+Math.abs(n.ty-P.ty);
+    if(d<=2&&!n._hidden&&!P.done.has(n.id+'_met')){mc.fillStyle='#ffff00';mc.fillRect(x+7,y-6,2,5);mc.fillRect(x+7,y-1,2,2);}
+  });
+}
+function drawMinimap(){
+  const mm=document.getElementById('minimap').getContext('2d');
+  mm.imageSmoothingEnabled=false;
+  const sx=80/COLS,sy=64/ROWS;
+  MAP.forEach((row,r)=>row.forEach((t,c)=>{
+    mm.fillStyle=t===5?'#1c5888':t===7?'#8b0000':t===9?'#8b6914':
+      t===3?'#3a2810':WALKABLE.has(t)?'#5a5248':'#2a1a08';
+    mm.fillRect(c*sx,r*sy,sx,sy);
+  }));
+  mm.fillStyle='#f0f000';mm.fillRect(P.tx*sx-1,P.ty*sy-1,3,3);
+}
+function redrawMap(){
+  mc.clearRect(0,0,480,432);
+  MAP.forEach((row,r)=>row.forEach((t,c)=>drawTile(c,r,t,(r+c))));
+  drawNPCs();drawMinimap();
+}
+
+// ─── PLAYER SPRITE ───
+const pc=document.getElementById('player').getContext('2d');
+pc.imageSmoothingEnabled=false;
+function drawPlayer(fr){
+  pc.clearRect(0,0,16,16);
+  pc.fillStyle='rgba(0,0,0,.25)';pc.fillRect(2,13,12,3);
+  pc.fillStyle='#3060b0';
+  if(fr%2===0){pc.fillRect(4,11,3,4);pc.fillRect(9,11,3,4);}
+  else{pc.fillRect(3,11,3,4);pc.fillRect(10,11,3,4);}
+  pc.fillStyle='#e8e4d0';pc.fillRect(3,6,10,6);
+  pc.fillStyle='#f0f000';pc.fillRect(3,10,10,2);
+  pc.fillStyle='#e8e4d0';pc.fillRect(1,7,2,4);pc.fillRect(13,7,2,4);
+  pc.fillStyle='#f0c890';pc.fillRect(4,1,8,6);
+  pc.fillStyle='#1a0800';pc.fillRect(4,1,8,2);
+  if(P.facing!=='up'){pc.fillStyle='#1a0800';pc.fillRect(5,4,2,2);pc.fillRect(9,4,2,2);}
+}
+
+// ─── ZONES ───
+const ZONES=[
+  {n:'Cais do Sodré',x1:0,y1:18,x2:6,y2:25},
+  {n:'Bairro Alto',x1:0,y1:0,x2:5,y2:11},
+  {n:'Mouraria',x1:7,y1:12,x2:18,y2:19},
+  {n:'Alfama',x1:19,y1:14,x2:29,y2:19},
+  {n:'Martim Moniz',x1:0,y1:20,x2:29,y2:21},
+  {n:'Intendente',x1:20,y1:22,x2:29,y2:25},
+  {n:'Praça do Comércio',x1:7,y1:22,x2:19,y2:25},
+  {n:'Rio Tejo',x1:0,y1:26,x2:29,y2:26},
+];
+let lastZ='';
+function chkZone(){
+  for(const z of ZONES){
+    if(P.tx>=z.x1&&P.tx<=z.x2&&P.ty>=z.y1&&P.ty<=z.y2){
+      if(z.n!==lastZ){
+        lastZ=z.n;
+        document.getElementById('aN').textContent='LISBOA — '+z.n.toUpperCase();
+        document.getElementById('hZO').textContent=z.n.split(' ')[0];
+        showZTag(z.n);
+        if(z.n==='Intendente'&&P.cartel===null&&!GS.cartel) setTimeout(triggerCartel,700);
+      }return;
+    }
+  }
+}
+function showZTag(n){
+  const e=document.getElementById('zoneTag');
+  e.textContent='📍 '+n;e.style.opacity='1';
+  clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity='0',2800);
+}
+
+// ─── INPUT ───
+const keys={};
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+  const busy=GS.battle||GS.gym||GS.stats||GS.shop||GS.cartel||GS.sb;
+  if((e.key==='z'||e.key==='Z'||e.key==='Enter')&&!busy){
+    if(GS.dlg)advDlg(); else tryInteract();
+  }
+  if(e.key==='Tab'&&!busy){e.preventDefault();openStats();}
+  if(e.key==='Escape'){if(GS.stats)closeStats();if(GS.shop)closeShop();}
+  if(GS.battle){if(e.key==='x'||e.key==='X')showMain();if(e.key==='1')showTech();if(e.key==='2')showPos();if(e.key==='3')doRest();}
+});
+document.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+// ─── MOVEMENT ───
+let mAcc=0;
+function tryMove(dx,dy){
+  const nx=P.tx+dx,ny=P.ty+dy;
+  if(nx<0||nx>=COLS||ny<0||ny>=ROWS)return;
+  if(!WALKABLE.has(MAP[ny][nx]))return;
+  if(nx>=27&&ny>=22&&!P.belts.boxe){startSysDlg('FISCAL CP','Precisas da faixa de boxe de Lisboa.\nVence o Seamus no Gallagher\'s primeiro!');return;}
+  for(const n of NPCS)if(n.tx===nx&&n.ty===ny)return;
+  P.tx=nx;P.ty=ny;P.anim++;chkZone();chkNPC();updHUD();
+}
+function chkNPC(){NPCS.forEach(n=>{n._near=Math.abs(n.tx-P.tx)+Math.abs(n.ty-P.ty)<=2;});}
+function updHUD(){
+  document.getElementById('hHP').textContent=Math.max(0,P.hp);
+  document.getElementById('hST').textContent=Math.max(0,P.st);
+  document.getElementById('hCO').textContent=P.coins;
+}
+
+// ─── DIALOGUE ───
+function tryInteract(){
+  if(GS.dlg||GS.battle)return;
+  const dirs=[[0,1],[0,-1],[1,0],[-1,0],[0,0]];
+  for(const [dx,dy] of dirs){
+    const n=NPCS.find(n=>n.tx===P.tx+dx&&n.ty===P.ty+dy&&!n._hidden);
+    if(n){startDlg(n);return;}
+  }
+  // door check
+  for(const [dx,dy] of dirs){
+    const nx=P.tx+dx,ny=P.ty+dy;
+    if(ny>=0&&ny<ROWS&&nx>=0&&nx<COLS&&MAP[ny][nx]===4){
+      if(ny<=7)openSubGymBA();
+      else if(ny>=15&&ny<=16)openGym();
+      return;
+    }
+  }
+}
+function startSysDlg(name,text){
+  GS.dlg=true;
+  document.getElementById('dialogBox').style.display='block';
+  document.getElementById('dName').textContent=name;
+  typeD(text,()=>{setTimeout(()=>{document.getElementById('dialogBox').style.display='none';GS.dlg=false;},1200);});
+}
+function startDlg(npc){
+  if(npc.isShop){openShop();return;}
+  GS.dlg=true;GS.npc=npc;GS.step=0;
+  document.getElementById('dialogBox').style.display='block';
+  document.getElementById('dName').textContent=npc.name;
+  typeD(npc.lines[0],()=>{});
+}
+function typeD(text,cb){
+  clearInterval(GS.dTimer);
+  const el=document.getElementById('dText');el.textContent='';let i=0;
+  GS.dTimer=setInterval(()=>{el.textContent+=text[i++];if(i>=text.length){clearInterval(GS.dTimer);if(cb)cb();}},26);
+}
+function advDlg(){
+  clearInterval(GS.dTimer);
+  const npc=GS.npc;
+  if(!npc){document.getElementById('dialogBox').style.display='none';GS.dlg=false;return;}
+  const cur=npc.lines[GS.step];
+  const el=document.getElementById('dText');
+  if(el.textContent.length<cur.length){el.textContent=cur;return;}
+  GS.step++;
+  if(GS.step>=npc.lines.length){
+    document.getElementById('dialogBox').style.display='none';GS.dlg=false;
+    P.done.add(npc.id+'_met');
+    if(npc.battle&&!P.done.has(npc.id))setTimeout(()=>startBattle(npc),200);
+    if(npc.afterDlg==='judoOffer')offerJudo();
+  } else typeD(npc.lines[GS.step],()=>{});
+}
+
+// ─── GYM GALLAGHER'S ───
+function openGym(){
+  fade(()=>{
+    GS.gym=true;
+    const gs=document.getElementById('gymScr');gs.style.display='flex';gs.style.flexDirection='column';
+    document.getElementById('gymT').textContent="🥊 GALLAGHER'S BOXING CLUB";
+    const won=P.done.has('seamus');
+    let html=`<div class="ov-txt">${won?'O Seamus acena-te com respeito.<br>"Volta para treinar quando quiseres."':'Cheiro a couro e suor.<br>Coach Seamus O\'Brien está no ring.<br>"Outro pretendente? Vamos ver o que tens."'}</div>`;
+    if(!P.sbDone)html+=`<button class="ov-btn" style="color:var(--gg)" onclick="openSb()">⚡ TREINO OBRIGATÓRIO — Speed Bag</button>`;
+    if(P.sbDone&&!won)html+=`<button class="ov-btn" style="color:var(--gr);border-color:var(--gr)" onclick="challSeamus()">⚔ DESAFIAR SEAMUS O'BRIEN</button>`;
+    if(won)html+=`<button class="ov-btn" onclick="gymTrain('boxe',5,'Bom treino. +5 Boxe.')">💪 TREINO LIVRE (+5 Boxe)</button>`;
+    html+=`<button class="ov-btn" onclick="closeGym()">◀ SAIR</button>`;
+    document.getElementById('gymB').innerHTML=html;
+  });
+}
+function closeGym(){fade(()=>{document.getElementById('gymScr').style.display='none';GS.gym=false;});}
+function gymTrain(art,amt,msg){P.ratings[art]=Math.min(100,P.ratings[art]+amt);startSysDlg('TREINO',msg);closeGym();}
+function challSeamus(){
+  closeGym();
+  setTimeout(()=>startBattle({id:'seamus',name:"SEAMUS O'BRIEN",battle:true,
+    enemy:{name:"SEAMUS O'BRIEN",hp:P.seamusStrong?130:110,mHp:P.seamusStrong?130:110,
+      st:90,mSt:90,style:'boxe',
+      pal:{skin:'#d4a060',hair:'#c86820',gi:'#c04020',belt:'#ffffff',dark:'#802010',light:'#ffccaa'},
+      reward:'FAIXA DE BOXE',coins:60,
+      post:P.seamusStrong
+        ?["Finalmente alguém digno.","Recusaste o Cartel. Isso diz tudo.","Toma a tua faixa. Mereces."]
+        :["Float like a butterfly, hit like a Lisbon tram.","Cuida-te lá fora — o Cartel anda a vigiar."]}}),200);
+}
+
+// ─── SUB-GYMS ───
+function openSubGymBA(){
+  fade(()=>{
+    GS.gym=true;
+    document.getElementById('gymScr').style.display='flex';
+    document.getElementById('gymScr').style.flexDirection='column';
+    document.getElementById('gymT').textContent='💚 ACADEMIA CAPOEIRA — BAIRRO ALTO';
+    const won=P.done.has('jinga');
+    let html=`<div class="ov-txt">Ritmo de berimbau ao fundo.<br>Mestre Jinga acena-te. "Axé! Entra!"</div>`;
+    if(!P.capDone)html+=`<button class="ov-btn" onclick="closeGym();setTimeout(()=>startBattle(NPCS.find(n=>n.id==='jinga')),200)">🥋 TREINO + DESAFIO JINGA</button>`;
+    else html+=`<button class="ov-btn" onclick="gymTrain('capoeira',5,'Axé! +5 Capoeira.')">💪 TREINO LIVRE (+5 Capoeira)</button>`;
+    if(!P.done.has('streetcap'))html+=`<button class="ov-btn" style="color:var(--gg)" onclick="closeGym();setTimeout(()=>startBattle(NPCS.find(n=>n.id==='streetcap')),200)">⭐ DESAFIO DE RUA (opcional)</button>`;
+    html+=`<button class="ov-btn" onclick="closeGym()">◀ SAIR</button>`;
+    document.getElementById('gymB').innerHTML=html;
+  });
+}
+function offerJudo(){
+  if(P.judoDone)return;
+  fade(()=>{
+    GS.gym=true;
+    document.getElementById('gymScr').style.display='flex';
+    document.getElementById('gymScr').style.flexDirection='column';
+    document.getElementById('gymT').textContent='🥋 SUB-GINÁSIO JUDO — ALFAMA';
+    document.getElementById('gymB').innerHTML=`
+      <div class="ov-txt">Sensei Fernão abre uma porta de madeira velha.<br>"Entra. O tatami está pronto."</div>
+      <button class="ov-btn" onclick="P.ratings.judo=Math.min(100,P.ratings.judo+25);P.judoDone=true;startSysDlg('SENSEI FERNÃO','O teu corpo lembrou.\\n+25 Judo Rating.');closeGym();">🥋 TREINAR JUDO (+25)</button>
+      <button class="ov-btn" onclick="closeGym()">◀ AGORA NÃO</button>`;
+  });
+}
+
+// ─── SPEED BAG ───
+let sbH=0,sbOn=false,sbTm=null;
+function openSb(){
+  closeGym();
+  sbH=0;sbOn=true;
+  document.getElementById('sbScr').style.display='flex';
+  document.getElementById('sbScore').textContent='0/20';
+  document.getElementById('sbFill').style.width='0%';
+  document.getElementById('sbClose').style.display='none';
+  document.getElementById('sbInfo').textContent='Carrega 20x em 15 segundos!';
+  document.getElementById('sbTgt').style.background='var(--gr)';
+  GS.sb=true;
+  let t=15;
+  sbTm=setInterval(()=>{
+    t--;document.getElementById('sbInfo').textContent='Tempo: '+t+'s';
+    if(t<=0){clearInterval(sbTm);endSb(sbH>=20);}
+  },1000);
+}
+function hitBag(){
+  if(!sbOn)return;sbH++;
+  document.getElementById('sbScore').textContent=sbH+'/20';
+  document.getElementById('sbFill').style.width=Math.min(100,sbH/20*100)+'%';
+  const t=document.getElementById('sbTgt');t.style.transform='scale(.82)';
+  setTimeout(()=>t.style.transform='scale(1)',80);
+  if(sbH>=20){clearInterval(sbTm);endSb(true);}
+}
+function endSb(ok){
+  sbOn=false;
+  if(ok){
+    document.getElementById('sbInfo').textContent='PASSOU! +10 Boxe Rating';
+    P.ratings.boxe=Math.min(100,P.ratings.boxe+10);P.sbDone=true;
+    document.getElementById('sbTgt').style.background='var(--g1)';
+    document.getElementById('sbClose').style.display='block';
+  } else {
+    document.getElementById('sbInfo').textContent='FALHOU! '+sbH+'/20. Tenta de novo!';
+    sbH=0;
+    setTimeout(()=>{document.getElementById('sbScr').style.display='none';GS.sb=false;openGym();},1800);
+  }
+}
+function closeSb(){document.getElementById('sbScr').style.display='none';GS.sb=false;openGym();}
+
+// ─── CARTEL EVENT ───
+function triggerCartel(){
+  if(P.cartel!==null)return;
+  GS.cartel=true;
+  document.getElementById('cartelScr').style.display='flex';
+  document.getElementById('cartelScr').style.flexDirection='column';
+  document.getElementById('ctTxt').innerHTML=
+    'Um homem de fato escuro aborda-te.<br><br>'+
+    '"Rui Santos. Sabemos quem és.<br>'+
+    'Sabemos o que vieste fazer aqui.<br><br>'+
+    'A <span style="color:#cc2200">Ordem do Cartel</span> tem uma proposta:<br>'+
+    'Perde contra o Seamus.<br>'+
+    'Em troca: 500 coins e livre passagem para Porto.<br><br>'+
+    '<span style="color:#ff4444">Viktor Sousa</span> já aceitou condições similares.<br>'+
+    'Pensa bem."';
+  document.getElementById('ctCh').innerHTML='';
+
+  const mk=(txt,cls,cb)=>{const b=document.createElement('button');b.className='ct-btn '+cls;b.textContent=txt;b.onclick=cb;document.getElementById('ctCh').appendChild(b);};
+
+  mk('💰 ACEITAR — 500 coins, livre passagem','',()=>{
+    P.cartel='accept';P.coins+=500;updHUD();
+    document.getElementById('cartelScr').style.display='none';GS.cartel=false;
+    NPCS.find(n=>n.id==='agent')._hidden=false;
+    startSysDlg('AGENTE DO CARTEL','Decisão sábia.\nO combate está marcado. Não nos decepciones.');
+  });
+  mk('❌ RECUSAR — Seamus mais forte, recompensa extra','good',()=>{
+    P.cartel='refuse';P.seamusStrong=true;
+    document.getElementById('cartelScr').style.display='none';GS.cartel=false;
+    NPCS.find(n=>n.id==='agent')._hidden=false;
+    startSysDlg('AGENTE DO CARTEL','Decisão interessante.\nO Seamus vai saber que recusaste.\nBoa sorte — vai precisar.');
+  });
+}
+
+// ─── SHOP ───
+const ITEMS=[
+  {id:'lig',n:'LIGADURA',d:'+20 HP',p:40,fn:()=>{P.hp=Math.min(P.mHp,P.hp+20);updHUD();}},
+  {id:'buc',n:'PROTEÇÃO BUCAL',d:'-10% dano (1 combate)',p:55,fn:()=>{P.bucal=true;}},
+  {id:'sup',n:'SUPLEMENTO ST',d:'+30 Stamina',p:45,fn:()=>{P.st=Math.min(P.mSt,P.st+30);updHUD();}},
+  {id:'ros',n:'ROSIN TAPE',d:'Grappling +10% (1 combate)',p:80,fn:()=>{P.rosin=true;}},
+];
+function openShop(){
+  GS.shop=true;document.getElementById('shopScr').style.display='flex';document.getElementById('shopScr').style.flexDirection='column';
+  renderShop();
+}
+function renderShop(){
+  let h='';
+  ITEMS.forEach(it=>{
+    const can=P.coins>=it.p;
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gd);font-size:6px;color:var(--g4)">
+      <span><b style="color:var(--g3)">${it.n}</b><br><span style="font-size:5px;color:var(--g2)">${it.d}</span></span>
+      <button class="ov-btn" style="width:auto;padding:4px 8px;margin:0;${can?'':'opacity:.35;pointer-events:none'}" onclick="buyItem('${it.id}')">${it.p}💰</button>
+    </div>`;
+  });
+  h+=`<div style="font-size:6px;color:var(--gg);margin-top:8px">💰 Tens: ${P.coins} coins</div>`;
+  document.getElementById('shopB').innerHTML=h+`<button class="ov-btn" style="margin-top:8px" onclick="closeShop()">◀ SAIR</button>`;
+}
+function buyItem(id){
+  const it=ITEMS.find(i=>i.id===id);if(!it||P.coins<it.p)return;
+  P.coins-=it.p;it.fn();updHUD();renderShop();
+}
+function closeShop(){document.getElementById('shopScr').style.display='none';GS.shop=false;}
+
+// ─── STATS ───
+function openStats(){
+  if(GS.battle)return;
+  GS.stats=true;document.getElementById('statsScr').style.display='flex';document.getElementById('statsScr').style.flexDirection='column';
+  const bc={boxe:'#cc2200',judo:'#000',capoeira:'#009933',bjj:'#003087',wrestling:'#aa8800'};
+  let h=`<div class="ov-txt">
+    <b style="color:var(--g3)">RUI SANTOS</b><br>
+    HP: ${Math.max(0,P.hp)} / ${P.mHp}<br>
+    ST: ${Math.max(0,P.st)} / ${P.mSt}<br>
+    💰 ${P.coins} coins<br><br>
+    <b style="color:var(--g3)">─ RATINGS ─</b><br>`;
+  for(const[k,v] of Object.entries(P.ratings)){
+    h+=`${k.toUpperCase()}: <span style="color:${bc[k]||'var(--g2)'}">${v}/100</span><br>`;
+  }
+  h+=`<br><b style="color:var(--g3)">─ FAIXAS ─</b><br>`;
+  for(const[k,v] of Object.entries(P.belts)){
+    h+=`<span style="color:${v?bc[k]||'var(--g2)':'var(--g1)'}">${v?'●':'○'} ${k.toUpperCase()} — ${v?'OBTIDA':'por obter'}</span><br>`;
+  }
+  h+=`<br><b style="color:var(--g3)">─ CARTEL ─</b><br>`;
+  h+=`Escolha: <span style="color:${P.cartel==='refuse'?'var(--g2)':P.cartel==='accept'?'var(--gr)':'var(--g1)'}">${P.cartel==='refuse'?'RECUSOU':P.cartel==='accept'?'ACEITOU':'—'}</span>`;
+  h+=`</div><button class="ov-btn" onclick="closeStats()">◀ FECHAR</button>`;
+  document.getElementById('statsB').innerHTML=h;
+}
+function closeStats(){document.getElementById('statsScr').style.display='none';GS.stats=false;}
+
+// ─── BATTLE ───
+function drawFighter(canvas,pal,state){
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;
+  const S=4,px=(x,y,c)=>{ctx.fillStyle=c;ctx.fillRect(x*S,y*S,S,S);};
+  const idle=()=>{
+    [4,5,6,7].forEach(x=>px(x,0,pal.hair));
+    [4,5,6,7].forEach(x=>{px(x,1,pal.skin);px(x,2,pal.skin);});
+    px(5,2,'#1a0800');px(6,2,'#1a0800');
+    for(let r=3;r<=8;r++)for(let c=2;c<=9;c++)px(c,r,pal.gi);
+    [1,2].forEach(x=>{px(x,3,pal.gi);px(x,4,pal.gi);});
+    [9,10].forEach(x=>{px(x,3,pal.gi);px(x,4,pal.gi);});
+    px(2,8,pal.skin);px(9,8,pal.skin);
+    [3,4,5,6,7,8].forEach(x=>px(x,9,pal.belt));
+    [3,4,5,6,7,8].forEach(x=>{px(x,10,pal.gi);px(x,11,pal.gi);});
+    [3,4,7,8].forEach(x=>{px(x,12,pal.gi);px(x,13,pal.gi);px(x,14,pal.dark);px(x,15,pal.dark);});
+  };
+  if(state==='attack'){idle();px(10,3,pal.gi);px(11,3,pal.gi);px(11,2,pal.skin);}
+  else if(state==='hurt'){
+    [5,6,7,8].forEach(x=>px(x,0,pal.hair));
+    [4,5,6,7].forEach(x=>{px(x,1,pal.skin);px(x,2,pal.skin);});
+    for(let r=3;r<=8;r++)for(let c=3;c<=9;c++)px(c,r,pal.gi);
+    [1,2].forEach(x=>{px(x,2,pal.gi);px(x,3,pal.gi);});[10,11].forEach(x=>{px(x,2,pal.gi);px(x,3,pal.gi);});
+    [3,4,5,6,7,8].forEach(x=>px(x,9,pal.belt));
+    [4,5,6,7].forEach(x=>{px(x,10,pal.gi);px(x,11,pal.gi);px(x,12,pal.dark);});
+  } else idle();
+}
+const PPAL={skin:'#f0c890',hair:'#1a0800',gi:'#e8e4d0',belt:'#f0f000',dark:'#3060b0',light:'#fff'};
+const TECHS=[
+  {id:'jab',n:'JAB',art:'BOXE',pos:['EM PÉ','CLINCH'],d:14,c:8,fx:null},
+  {id:'cruzado',n:'CRUZADO',art:'BOXE',pos:['EM PÉ'],d:22,c:14,fx:null},
+  {id:'gancho',n:'GANCHO',art:'BOXE',pos:['EM PÉ','CLINCH'],d:20,c:14,fx:'stun'},
+  {id:'armbar',n:'ARMBAR',art:'BJJ',pos:['CHÃO'],d:28,c:20,fx:'stun'},
+  {id:'guard',n:'GUARDA',art:'BJJ',pos:['CHÃO','CLINCH'],d:8,c:8,fx:null},
+  {id:'takedown',n:'TAKEDOWN',art:'WRESTLING',pos:['EM PÉ','CLINCH'],d:12,c:16,fx:'ground'},
+  {id:'teep',n:'TEEP',art:'MUAY THAI',pos:['EM PÉ'],d:16,c:10,fx:null},
+  {id:'joelho',n:'JOELHO',art:'MUAY THAI',pos:['CLINCH'],d:22,c:14,fx:null},
+  {id:'ginga',n:'GINGA KICK',art:'CAPOEIRA',pos:['EM PÉ'],d:18,c:12,fx:null},
+];
+const ET={
+  boxe:[{n:'JAB',p:['EM PÉ','CLINCH'],d:13,c:8,f:null},{n:'CRUZADO',p:['EM PÉ'],d:20,c:13,f:null},{n:'GANCHO',p:['EM PÉ','CLINCH'],d:18,c:12,f:'stun'}],
+  wrestling:[{n:'TAKEDOWN',p:['EM PÉ','CLINCH'],d:11,c:14,f:'ground'},{n:'SUPLEX',p:['CLINCH'],d:28,c:20,f:'ground'},{n:'JAB',p:['EM PÉ'],d:10,c:8,f:null}],
+  capoeira:[{n:'GINGA',p:['EM PÉ'],d:18,c:12,f:null},{n:'AU MORTAL',p:['EM PÉ'],d:22,c:16,f:'stun'},{n:'RASTEIRA',p:['EM PÉ','CLINCH'],d:14,c:10,f:'ground'}],
+};
+const POS=['EM PÉ','CLINCH','CHÃO'];
+
+function startBattle(npc){
+  GS.battle=true;GS.npc=npc;
+  const en=npc.enemy;
+  B={rnd:1,turn:'player',pos:'EM PÉ',busy:false,pStun:false,eStun:false,
+    p:{hp:P.hp,mHp:P.mHp,st:P.st,mSt:P.mSt},
+    e:{...en},msgs:[],msgBusy:false};
+  document.getElementById('battleScreen').style.display='flex';
+  document.getElementById('endScr').style.display='none';
+  document.getElementById('eN').textContent=en.name;
+  drawFighter(document.getElementById('pSpr'),PPAL,'idle');
+  drawFighter(document.getElementById('eSpr'),en.pal,'idle');
+  renderB();showMain();bMsg(en.name+' quer lutar!');
+}
+function renderB(){
+  const p=B.p,e=B.e;
+  const ph=Math.max(0,p.hp/p.mHp*100),eh=Math.max(0,e.hp/e.mHp*100);
+  document.getElementById('pHB').style.width=ph+'%';document.getElementById('pHB').className='bFi hp'+(ph<30?' low':'');
+  document.getElementById('eHB').style.width=eh+'%';document.getElementById('eHB').className='bFi hp'+(eh<30?' low':'');
+  document.getElementById('pSB').style.width=Math.max(0,p.st/p.mSt*100)+'%';
+  document.getElementById('eSB').style.width=Math.max(0,e.st/e.mSt*100)+'%';
+  document.getElementById('pHN').textContent=Math.max(0,p.hp)+'/'+p.mHp;
+  document.getElementById('eHN').textContent=Math.max(0,e.hp)+'/'+e.mHp;
+  document.getElementById('pSN').textContent=Math.max(0,p.st)+'/'+p.mSt;
+  document.getElementById('eSN').textContent=Math.max(0,e.st)+'/'+e.mSt;
+  document.getElementById('posBan').textContent='POS: '+B.pos;
+  document.getElementById('turnT').textContent=B.turn==='player'?'SEU TURNO':'ADVERSÁRIO';
+  document.getElementById('turnT').style.color=B.turn==='player'?'var(--gg)':'var(--gr)';
+  document.getElementById('rnT').textContent='RND '+B.rnd;
+}
+function bMsg(txt,cb){B.msgs.push({txt,cb});if(!B.msgBusy)procB();}
+function procB(){
+  if(!B.msgs.length){B.msgBusy=false;return;}B.msgBusy=true;
+  const{txt,cb}=B.msgs.shift();
+  const el=document.getElementById('mTxt'),cu=document.getElementById('mCur');
+  cu.style.display='none';el.textContent='';let i=0;
+  const iv=setInterval(()=>{el.textContent+=txt[i++];if(i>=txt.length){clearInterval(iv);cu.style.display='inline-block';setTimeout(()=>{if(cb)cb();procB();},700);}},22);
+}
+function showMain(){document.getElementById('mainM').style.display='grid';document.getElementById('techM').style.display='none';document.getElementById('posM').style.display='none';}
+function showTech(){
+  if(B.busy||B.turn!=='player')return;
+  document.getElementById('mainM').style.display='none';document.getElementById('posM').style.display='none';
+  const tm=document.getElementById('techM');tm.style.display='flex';tm.innerHTML='';
+  TECHS.forEach(t=>{
+    const av=t.pos.includes(B.pos),af=B.p.st>=t.c;
+    const btn=document.createElement('button');btn.className='tB'+((!av||!af)?' off':'');
+    btn.innerHTML=`<span style="color:var(--g3)">${t.n}</span><span class="tA">${t.art}</span><span class="tD">DMG:${t.d}</span><span class="tC">ST:${t.c}</span>`;
+    if(av&&af)btn.onclick=()=>patk(t);tm.appendChild(btn);
+  });
+  const bk=document.createElement('button');bk.id='bkB';bk.textContent='◀ VOLTAR';bk.onclick=showMain;tm.appendChild(bk);
+}
+function showPos(){
+  if(B.busy||B.turn!=='player')return;
+  document.getElementById('mainM').style.display='none';document.getElementById('techM').style.display='none';
+  const pm=document.getElementById('posM');pm.style.display='flex';pm.innerHTML='';
+  POS.forEach(pos=>{
+    const btn=document.createElement('button');btn.className='pB'+(B.pos===pos?' cur':'');
+    btn.innerHTML=`<span>${pos}</span>`;
+    btn.onclick=()=>{
+      if(B.pos===pos){showMain();return;}
+      B.busy=true;showMain();B.p.st-=10;B.pos=pos;renderB();
+      bMsg(`Mudaste para ${pos}! (-10 ST)`,()=>{B.turn='enemy';B.busy=false;renderB();setTimeout(eTurn,800);});
+    };pm.appendChild(btn);
+  });
+  const bk=document.createElement('button');bk.id='bkB';bk.textContent='◀ VOLTAR';bk.onclick=showMain;pm.appendChild(bk);
+}
+function patk(tech){
+  if(B.busy||B.turn!=='player')return;B.busy=true;showMain();B.p.st-=tech.c;
+  const ps=document.getElementById('pSpr');drawFighter(ps,PPAL,'attack');bFl();
+  setTimeout(()=>{
+    let d=tech.d+Math.floor(Math.random()*8)-3;
+    if(tech.art==='BOXE'&&B.pos==='EM PÉ')d=Math.floor(d*1.15);
+    if(tech.art==='BJJ'&&B.pos==='CHÃO')d=Math.floor(d*1.3);
+    if(P.rosin&&(tech.art==='WRESTLING'||tech.art==='BJJ'))d=Math.floor(d*1.1);
+    d=Math.max(1,d);B.e.hp-=d;
+    const es=document.getElementById('eSpr');es.classList.add('shE');drawFighter(es,B.e.pal,'hurt');
+    setTimeout(()=>{es.classList.remove('shE');drawFighter(es,B.e.pal,'idle');},400);
+    let fx='';if(tech.fx==='stun'){B.eStun=true;fx=' ATORDOADO!';}if(tech.fx==='ground'){B.pos='CHÃO';fx=' DERRUBADO!';}
+    renderB();drawFighter(ps,PPAL,'idle');
+    bMsg(`${tech.n}! ${d} dano!${fx}`,()=>{
+      if(B.e.hp<=0){endBattle(true);return;}
+      B.turn='enemy';B.busy=false;renderB();setTimeout(eTurn,700);
+    });
+  },280);
+}
+function doRest(){
+  if(B.busy||B.turn!=='player')return;B.busy=true;showMain();
+  const r=Math.floor(Math.random()*10)+15;B.p.st=Math.min(B.p.mSt,B.p.st+r);renderB();
+  bMsg(`Recuperaste ${r} ST!`,()=>{B.turn='enemy';B.busy=false;renderB();setTimeout(eTurn,700);});
+}
+function doFlee(){
+  if(B.busy||B.turn!=='player')return;B.busy=true;showMain();
+  bMsg('Não podes fugir!',()=>{B.turn='enemy';B.busy=false;renderB();setTimeout(eTurn,700);});
+}
+function eTurn(){
+  if(B.e.hp<=0)return;
+  if(B.eStun){B.eStun=false;bMsg(B.e.name+' ATORDOADO! Perde turno.',()=>endETurn());return;}
+  const pool=ET[B.e.style]||ET.boxe;
+  const us=pool.filter(t=>t.p.includes(B.pos)&&B.e.st>=t.c);
+  if(!us.length){const r=12+Math.floor(Math.random()*8);B.e.st=Math.min(B.e.mSt,B.e.st+r);bMsg(B.e.name+' recupera fôlego!',()=>endETurn());return;}
+  const t=us[Math.floor(Math.random()*us.length)];B.e.st-=t.c;
+  const es=document.getElementById('eSpr');drawFighter(es,B.e.pal,'attack');bFl();
+  setTimeout(()=>{
+    let d=t.d+Math.floor(Math.random()*6)-2;
+    if(P.bucal)d=Math.floor(d*.9);d=Math.max(1,d);B.p.hp-=d;
+    const ps=document.getElementById('pSpr');ps.classList.add('shake');drawFighter(ps,PPAL,'hurt');
+    setTimeout(()=>{ps.classList.remove('shake');drawFighter(ps,PPAL,'idle');},400);
+    let fx='';if(t.f==='stun'){B.pStun=true;fx=' ATORDOADO!';}if(t.f==='ground'){B.pos='CHÃO';fx=' DERRUBADO!';}
+    renderB();drawFighter(es,B.e.pal,'idle');
+    bMsg(`${B.e.name}: ${t.n}! -${d} HP!${fx}`,()=>{if(B.p.hp<=0){endBattle(false);return;}endETurn();});
+  },280);
+}
+function endETurn(){
+  B.rnd++;B.turn='player';B.busy=false;
+  if(B.pStun){B.pStun=false;bMsg('ATORDOADO! Perdes o turno!',()=>{B.turn='enemy';setTimeout(eTurn,800);});return;}
+  renderB();bMsg('Round '+B.rnd+'.');
+}
+function bFl(){const ov=document.getElementById('flashOv');ov.style.opacity='.55';setTimeout(()=>ov.style.opacity='0',130);}
+function endBattle(won){
+  B.busy=true;P.hp=Math.max(1,B.p.hp);P.st=Math.max(0,B.p.st);P.bucal=false;
+  const npc=GS.npc,en=npc.enemy;
+  document.getElementById('endScr').style.display='flex';
+  document.getElementById('endT').textContent=won?'VITÓRIA!':'K.O.';
+  if(won){
+    P.done.add(npc.id);
+    P.coins+=en.coins||0;
+    if(npc.id==='seamus')P.belts.boxe=true;
+    if(npc.id==='jinga'){P.belts.capoeira=true;P.ratings.capoeira=Math.min(100,P.ratings.capoeira+20);P.capDone=true;}
+    if(en.isItem==='rosin')P.rosin=true;
+    const rb={boxe:'boxe',wrestling:'wrestling',capoeira:'capoeira'};
+    if(rb[en.style])P.ratings[rb[en.style]]=Math.min(100,P.ratings[rb[en.style]]+10);
+    document.getElementById('endS').textContent=(en.reward||'')+(en.coins?' · +'+en.coins+'💰':'');
+    if(en.post)npc._post=en.post;
+  } else {
+    document.getElementById('endS').textContent='Treina mais e volta!';
+    P.hp=Math.max(1,Math.floor(P.mHp*.4));P.st=Math.floor(P.mSt*.5);
+  }
+  updHUD();
+}
+function returnToMap(){
+  const npc=GS.npc;
+  document.getElementById('battleScreen').style.display='none';
+  document.getElementById('endScr').style.display='none';
+  GS.battle=false;B={};
+  if(npc?._post?.length){
+    const post=npc._post;npc._post=null;
+    setTimeout(()=>{
+      GS.dlg=true;GS.npc={lines:post,battle:false};GS.step=0;
+      document.getElementById('dialogBox').style.display='block';
+      document.getElementById('dName').textContent=npc.enemy?.name||npc.name;
+      typeD(post[0],()=>{});
+    },400);
+  }
+}
+
+// ─── FADE ───
+function fade(cb){
+  const ov=document.getElementById('fadeOv');ov.style.opacity='1';
+  setTimeout(()=>{if(cb)cb();ov.style.opacity='0';},380);
+}
+
+// ─── MAIN LOOP ───
+let lastT=0,mAcc2=0;
+function loop(ts){
+  const dt=ts-lastT;lastT=ts;
+  const busy=GS.battle||GS.gym||GS.stats||GS.shop||GS.cartel||GS.sb||GS.dlg;
+  if(!busy){
+    mAcc2+=dt;
+    if(mAcc2>=155){mAcc2=0;
+      if(keys['ArrowUp']||keys['w']||keys['W']){P.facing='up';tryMove(0,-1);}
+      else if(keys['ArrowDown']||keys['s']||keys['S']){P.facing='down';tryMove(0,1);}
+      else if(keys['ArrowLeft']||keys['a']||keys['A']){P.facing='left';tryMove(-1,0);}
+      else if(keys['ArrowRight']||keys['d']||keys['D']){P.facing='right';tryMove(1,0);}
+    }
+  }
+  const pel=document.getElementById('player');
+  pel.style.left=(P.tx*TL)+'px';pel.style.top=(P.ty*TL)+'px';
+  drawPlayer(Math.floor(ts/200));
+  if(!GS.battle){redrawMap();}
+  requestAnimationFrame(loop);
+}
+
+// ─── INIT ───
+chkNPC();chkZone();updHUD();
+requestAnimationFrame(loop);
+setTimeout(()=>startSysDlg('SISTEMA','Lisboa — Região completa!\nWASD mover · Z interagir · TAB stats\nExplora as 6 zonas e encontra o Gallagher\'s em Mouraria.'),500);
+</script>
+</body>
+</html>
